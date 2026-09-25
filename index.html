@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Smore Simulator</title>
+<style>
+  html, body {
+    margin: 0; padding: 0; height: 100%;
+    background: #0b1020;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    font-family: "Courier New", monospace; color: #fff;
+  }
+  h1 { font-size: 20px; margin: 8px 0; letter-spacing: 4px; color: #ffb347; text-shadow: 2px 2px 0 #7a2c00; }
+  canvas {
+    image-rendering: pixelated; image-rendering: crisp-edges;
+    width: 768px; height: 576px; max-width: 96vw;
+    border: 4px solid #3a2b1a; background: #000;
+    cursor: crosshair;
+  }
+  .hint { font-size: 13px; margin-top: 8px; color: #ccc; text-align: center; line-height: 1.6; max-width: 768px; }
+  .hint b { color: #ffb347; }
+</style>
+</head>
+<body>
+<h1>SMORE SIMULATOR</h1>
+<canvas id="game" width="256" height="192"></canvas>
+<div class="hint">
+  <b>Move:</b> mouse or arrow keys &nbsp; <b>G</b> graham &nbsp; <b>C</b> chocolate &nbsp;
+  <b>M</b> marshmallow &nbsp; <b>N</b> new mallow &nbsp; <b>E</b> eat s'more<br>
+  Hold the marshmallow over the flames. Golden = 100pts, underdone = 30, dark = 50, burnt = 10. Stack: graham &rarr; chocolate &rarr; mallow &rarr; graham.
+</div>
+<script>
+const cv = document.getElementById('game');
+const ctx = cv.getContext('2d');
+ctx.imageSmoothingEnabled = false;
+const W = 256, H = 192;
+
+// ---------- state ----------
+let tip = { x: 150, y: 60 };          // marshmallow tip position
+let mouse = { x: 150, y: 60, active: false };
+let keys = {};
+let roast = 0;                        // 0 raw -> 1 burnt
+let burntAnnounced = false;
+let layers = [];                      // plate layers: 'graham' | 'chocolate' | 'mallow'
+let score = 0;
+let timeLeft = 90;
+let gameOver = false;
+let message = '', messageT = 0;
+let particles = [];
+let stars = [];
+let popScore = null;                  // floating +pts text
+
+for (let i = 0; i < 70; i++) stars.push({ x: Math.random()*W, y: Math.random()*90, tw: Math.random()*6.28 });
+
+const fireX = 80, fireY = 150;        // campfire center (ground level)
+
+// ---------- audio (tiny) ----------
+let actx = null;
+function beep(freq, dur, type) {
+  try {
+    if (!actx) actx = new (window.AudioContext || window.webkitAudioContext)();
+    const o = actx.createOscillator(), g = actx.createGain();
+    o.type = type || 'square'; o.frequency.value = freq;
+    g.gain.setValueAtTime(0.06, actx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.0001, actx.currentTime + dur);
+    o.connect(g); g.connect(actx.destination);
+    o.start(); o.stop(actx.currentTime + dur);
+  } catch(e) {}
+}
+const sizzle = () => beep(120 + Math.random()*80, 0.05, 'sawtooth');
+const pop = () => { beep(440, 0.08); setTimeout(() => beep(660, 0.1), 80); };
+
+// ---------- input ----------
+cv.addEventListener('mousemove', e => {
+  const r = cv.getBoundingClientRect();
+  mouse.x = (e.clientX - r.left) / r.width * W;
+  mouse.y = (e.clientY - r.top) / r.height * H;
+  mouse.active = true;
+});
+window.addEventListener('keydown', e => {
+  keys[e.key.toLowerCase()] = true;
+  handleKey(e.key.toLowerCase());
+});
+window.addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false; });
+
+function handleKey(k) {
+  if (gameOver) { if (k === 'r') restart(); return; }
+  if (k === 'n') { roast = 0; burntAnnounced = false; say('Fresh mallow!'); }
+  if (k === 'g') addLayer('graham');
+  if (k === 'c') addLayer('chocolate');
+  if (k === 'm') addLayer('mallow');
+  if (k === 'e') eat();
+}
+
+function say(t) { message = t; messageT = 2.5; }
+
+function expectedNext() {
+  return ['graham', 'chocolate', 'mallow', 'graham'][layers.length];
+}
+function addLayer(kind) {
+  if (gameOver) return;
+  const want = expectedNext();
+  if (!want) { say('S\'more is done! Press E to eat.'); return; }
+  if (kind !== want) { say('Wrong order! Need: ' + want); beep(160, 0.15, 'sawtooth'); return; }
+  layers.push(kind);
+  beep(300 + layers.length * 120, 0.08);
+  if (layers.length === 4) say('Press E to EAT!');
+}
+
+// ---------- game logic ----------
+function mallowQuality() {
+  if (roast < 0.35) return { name: 'underdone', pts: 30 };
+  if (roast < 0.7)  return { name: 'GOLDEN!',   pts: 100 };
+  if (roast < 0.9)  return { name: 'dark',      pts: 50 };
+  return { name: 'burnt', pts: 10 };
+}
+function eat() {
+  if (layers.length !== 4) { say('Stack all 4 layers first!'); return; }
+  const q = mallowQuality();
+  score += q.pts;
+  popScore = { x: 200, y: 90, t: 1.5, txt: '+' + q.pts + ' ' + q.name };
+  pop();
+  layers = [];
+  roast = 0; burntAnnounced = false;
+  say(q.pts === 100 ? 'PERFECT s\'more!' : 'Ate a ' + q.name + ' s\'more.');
+}
+function restart() {
+  score = 0; timeLeft = 90; gameOver = false;
+  layers = []; roast = 0; burntAnnounced = false;
+  say('New round! Make s\'mores!');
+}
+
+function overFire() {
+  return tip.x > fireX - 22 && tip.x < fireX + 22 && tip.y > fireY - 46 && tip.y < fireY + 4;
+}
+
+let last = performance.now();
+function update(now) {
+  const dt = Math.min((now - last) / 1000, 0.05);
+  last = now;
+  if (!gameOver) {
+    timeLeft -= dt;
+    if (timeLeft <= 0) { timeLeft = 0; gameOver = true; say(''); }
+
+    // move tip
+    if (mouse.active) { tip.x = mouse.x; tip.y = mouse.y; }
+    const sp = 120 * dt;
+    if (keys['arrowleft'])  tip.x -= sp;
+    if (keys['arrowright']) tip.x += sp;
+    if (keys['arrowup'])    tip.y -= sp;
+    if (keys['arrowdown'])  tip.y += sp;
+    tip.x = Math.max(4, Math.min(W - 4, tip.x));
+    tip.y = Math.max(4, Math.min(H - 4, tip.y));
+
+    // roast
+    if (overFire()) {
+      roast = Math.min(1, roast + dt * 0.28);
+      if (Math.random() < 0.3) sizzle();
+      if (roast > 0.9 && !burntAnnounced) { burntAnnounced = true; say('BURNT! Press N for a new mallow.'); beep(140, 0.3, 'sawtooth'); }
+      // ember particles
+      if (Math.random() < 0.5) particles.push({ x: tip.x + (Math.random()*8-4), y: tip.y, vy: -20 - Math.random()*20, life: 0.5, c: '#ff9d2e' });
+    }
+    // flame particles
+    for (let i = 0; i < 3; i++) particles.push({
+      x: fireX + (Math.random()*28 - 14), y: fireY - 4,
+      vy: -40 - Math.random()*40, life: 0.4 + Math.random()*0.4,
+      c: ['#ff3d00', '#ff9d2e', '#ffe14d'][Math.floor(Math.random()*3)]
+    });
+    // message timer
+    if (messageT > 0) messageT -= dt;
+    if (popScore) { popScore.t -= dt; popScore.y -= 20*dt; if (popScore.t <= 0) popScore = null; }
+  }
+  // particles always update
+  for (const p of particles) { p.y += p.vy * dt; p.life -= dt; }
+  particles = particles.filter(p => p.life > 0);
+  for (const s of stars) s.tw += dt;
+  draw();
+  requestAnimationFrame(update);
+}
+
+// ---------- drawing ----------
+function px(x, y, w, h, c) { ctx.fillStyle = c; ctx.fillRect(Math.round(x), Math.round(y), Math.round(w), Math.round(h)); }
+
+function mallowColor() {
+  // white -> golden -> dark brown -> black
+  const stops = [[255,255,255],[245,200,110],[138,90,43],[26,26,26]];
+  const pos = [0, 0.5, 0.8, 1.0];
+  let i = 0;
+  while (i < pos.length - 2 && roast > pos[i+1]) i++;
+  const a = pos[i], b = pos[i+1], t = Math.max(0, Math.min(1, (roast - a) / (b - a)));
+  const lerp = (u, v) => Math.round(u + (v - u) * t);
+  const [r1,g1,b1] = stops[i], [r2,g2,b2] = stops[i+1];
+  return 'rgb(' + lerp(r1,r2) + ',' + lerp(g1,g2) + ',' + lerp(b1,b2) + ')';
+}
+
+function draw() {
+  // sky
+  px(0, 0, W, H, '#0b1020');
+  // stars
+  for (const s of stars) {
+    const a = 0.4 + 0.6 * Math.abs(Math.sin(s.tw));
+    ctx.fillStyle = 'rgba(255,255,255,' + a.toFixed(2) + ')';
+    ctx.fillRect(s.x | 0, s.y | 0, 1, 1);
+  }
+  // moon
+  px(218, 14, 16, 16, '#e8e6c9');
+  px(221, 16, 3, 3, '#c9c7a8'); px(227, 21, 4, 4, '#c9c7a8');
+  // ground
+  px(0, 138, W, H - 138, '#1c3a1c');
+  px(0, 138, W, 3, '#2e5a2e');
+
+  // fire pit: stones
+  const stoneX = [-26, -18, -10, -2, 6, 14, 22];
+  stoneX.forEach((o, i) => px(fireX + o, fireY - 2 + (i % 2), 9, 6, i % 2 ? '#6b6b6b' : '#8a8a8a'));
+  // logs
+  px(fireX - 16, fireY - 10, 34, 6, '#5a3a1a');
+  px(fireX - 14, fireY - 16, 30, 5, '#6e4a22');
+  // flames: stacked pixel blobs
+  const t = performance.now() / 120;
+  for (let i = 0; i < 5; i++) {
+    const h = 18 + Math.sin(t + i * 1.7) * 7 + Math.random() * 4;
+    const wdt = 22 - i * 3;
+    const cols = ['#ff3d00', '#ff9d2e', '#ffe14d', '#fff7b0', '#ffe14d'];
+    px(fireX - wdt / 2, fireY - 12 - h + i * 5, wdt, 6, cols[i]);
+  }
+  // glow
+  ctx.fillStyle = 'rgba(255,140,40,0.08)';
+  ctx.beginPath(); ctx.arc(fireX, fireY - 20, 46, 0, 7); ctx.fill();
+
+  // particles
+  for (const p of particles) {
+    ctx.globalAlpha = Math.max(0, p.life * 2);
+    px(p.x, p.y, 2, 2, p.c);
+    ctx.globalAlpha = 1;
+  }
+
+  // plate (right side)
+  const plateX = 196, plateY = 150;
+  px(plateX - 24, plateY, 52, 4, '#9a9a9a');
+  px(plateX - 20, plateY + 4, 44, 3, '#777');
+  let ly = plateY;
+  for (const l of layers) {
+    if (l === 'graham')    { ly -= 5; px(plateX - 18, ly, 40, 5, '#d9a45b'); px(plateX - 10, ly + 2, 3, 1, '#b07f3a'); px(plateX + 6, ly + 2, 3, 1, '#b07f3a'); }
+    if (l === 'chocolate') { ly -= 4; px(plateX - 16, ly, 36, 4, '#4a2410'); }
+    if (l === 'mallow')    { ly -= 7; px(plateX - 15, ly, 34, 7, mallowColor()); }
+  }
+  // next-layer hint
+  const want = expectedNext();
+  ctx.fillStyle = '#aaa'; ctx.font = '6px monospace';
+  ctx.fillText(want ? 'next: ' + want + ' (' + want[0].toUpperCase() + ')' : 'press E to eat!', plateX - 24, plateY + 16);
+
+  // stick + marshmallow (held from bottom-right)
+  const handX = W - 8, handY = H + 4;
+  ctx.strokeStyle = '#7a5a30'; ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.moveTo(handX, handY); ctx.lineTo(tip.x, tip.y); ctx.stroke();
+  // marshmallow
+  px(tip.x - 6, tip.y - 9, 12, 14, mallowColor());
+  px(tip.x - 6, tip.y - 9, 12, 3, 'rgba(255,255,255,0.35)');
+  if (roast > 0.9) { px(tip.x - 6, tip.y - 9, 12, 14, 'rgba(0,0,0,0.25)'); }
+
+  // roast meter (top-left)
+  ctx.fillStyle = '#222'; ctx.fillRect(8, 8, 100, 10);
+  const goldenL = 0.35, goldenR = 0.7;
+  px(8 + 100 * goldenL, 8, 100 * (goldenR - goldenL), 10, 'rgba(255,215,80,0.5)');
+  px(8, 8, 100 * roast, 10, mallowColor());
+  ctx.strokeStyle = '#fff'; ctx.lineWidth = 1; ctx.strokeRect(8.5, 8.5, 100, 10);
+  ctx.fillStyle = '#fff'; ctx.font = '7px monospace';
+  ctx.fillText('ROAST', 8, 26);
+  ctx.fillText('SCORE ' + score, 120, 15);
+  ctx.fillText('TIME ' + Math.ceil(timeLeft), 120, 26);
+
+  // fire zone hint (faint)
+  ctx.strokeStyle = 'rgba(255,160,60,0.25)'; ctx.setLineDash([3, 3]);
+  ctx.strokeRect(fireX - 22, fireY - 46, 44, 50);
+  ctx.setLineDash([]);
+
+  // message
+  if (messageT > 0 && message) {
+    ctx.fillStyle = '#000'; ctx.fillRect(28, 60, W - 56, 20);
+    ctx.strokeStyle = '#ffb347'; ctx.strokeRect(28.5, 60.5, W - 57, 19);
+    ctx.fillStyle = '#ffb347'; ctx.font = '8px monospace'; ctx.textAlign = 'center';
+    ctx.fillText(message, W / 2, 73);
+    ctx.textAlign = 'left';
+  }
+  // floating score
+  if (popScore) {
+    ctx.globalAlpha = Math.min(1, popScore.t * 2);
+    ctx.fillStyle = '#ffe14d'; ctx.font = '10px monospace'; ctx.textAlign = 'center';
+    ctx.fillText(popScore.txt, popScore.x, popScore.y);
+    ctx.textAlign = 'left'; ctx.globalAlpha = 1;
+  }
+  // game over
+  if (gameOver) {
+    ctx.fillStyle = 'rgba(0,0,0,0.7)'; ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = '#ffb347'; ctx.font = '16px monospace'; ctx.textAlign = 'center';
+    ctx.fillText('TIME\'S UP!', W / 2, 80);
+    ctx.fillStyle = '#fff'; ctx.font = '10px monospace';
+    ctx.fillText('Final score: ' + score, W / 2, 104);
+    ctx.fillText('Press R to play again', W / 2, 124);
+    ctx.textAlign = 'left';
+  }
+}
+
+say('Roast your mallow over the fire!');
+requestAnimationFrame(update);
+</script>
+</body>
+</html>
