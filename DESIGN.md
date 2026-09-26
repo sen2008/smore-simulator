@@ -1,6 +1,6 @@
 # Smore Simulator — Full Game Design Document
 
-**Version:** 1.1 (2026-09-25) — roguelike tour structure
+**Version:** 1.2 (2026-09-25) — 10-minute tours
 **Status:** Pre-production
 **Repo:** github.com/sen2008/smore-simulator
 
@@ -10,7 +10,7 @@
 
 *"Overcooked meets Stardew Valley at a campfire."*
 
-You run a s'mores stand touring through America's national parks. Campers line up with specific orders; you roast marshmallows over a living pixel fire to their exact liking, stack them with premium ingredients, and serve them up for coins and tips. Master the flame, draft upgrades between nights, and survive all 7 nights of the tour to become a Legendary Roastmaster — no two tours ever play the same.
+You run a s'mores stand touring through America's national parks. Campers line up with specific orders; you roast marshmallows over a living pixel fire to their exact liking, stack them with premium ingredients, and serve them up for coins and tips. Master the flame, draft upgrades between nights, and survive all 5 nights of the tour to become a Legendary Roastmaster — no two tours ever play the same.
 
 **One-sentence pitch:** A cozy roguelike cooking game about achieving the perfect marshmallow roast.
 
@@ -33,11 +33,11 @@ You run a s'mores stand touring through America's national parks. Campers line u
 ```
 Start tour → Night N: biome + modifiers drawn → Serve campers, manage fire
 → Draft 1 of 3 upgrade cards → Traveling merchant (random stock) → Next night (harder)
-→ Survive all 7 nights → LEGENDARY ROASTMASTER. Lose all reputation → tour over.
+→ Survive all 5 nights → LEGENDARY ROASTMASTER. Lose all reputation → tour over.
 Between tours: unlock new biomes, tools, events, and perks (meta progression).
 ```
 
-A tour is one run: ~45–60 minutes. A night is one shift. Full details in §9.
+A tour is one run: ~10 minutes. A night is one shift (~90 seconds of serving + a quick draft). Full details in §9.
 
 ## 5. The Roasting System (core mechanic, in depth)
 
@@ -104,7 +104,9 @@ Raw → Soft → **Golden** → Dark → Burnt. Each order specifies a target (e
 
 ## 9. The Tour (roguelike run structure)
 
-A tour = **7 nights**, ~45–60 minutes. Win by surviving night 7. Lose when reputation hits zero.
+A tour = **5 nights**, ~10 minutes. Win by surviving night 5. Lose when reputation hits zero.
+
+Pacing is brisk by design: ~90 seconds of serving per night, then a 20-second draft/merchant breather. Short runs mean low commitment, high "one more tour" energy — and 10-minute sessions play great on Steam Deck in handheld mode.
 
 ### 9.1 Night generation
 Each night draws from the unlocked **biome pool** (no repeats until the pool is exhausted):
@@ -112,7 +114,7 @@ Each night draws from the unlocked **biome pool** (no repeats until the pool is 
 2. **Lakeshore** — wind gusts. Unlocks Jumbo mallows.
 3. **Desert Mesa** — intense heat, flare-ups. Unlocks Minis.
 4. **Snowy Peaks** — fire health/stoking mechanic. Unlocks Stuffed mallows. Night-only aesthetic.
-5. **Festival Grounds** — *always night 7.* Rush crowds, all mechanics, critic visits.
+5. **Festival Grounds** — *always night 5.* Rush crowds, all mechanics, critic visits.
 
 Each night also rolls **1–2 modifiers**, e.g.: *Windy* (stronger gusts), *Full moon* (double tips), *Short rations* (one fewer ingredient slot), *Health inspector* (burnt serves cost a heart), *Rain* (fire health drains).
 
@@ -126,7 +128,7 @@ Each night also rolls **1–2 modifiers**, e.g.: *Windy* (stronger gusts), *Full
 | Grease fire | Random flare-ups all night (Desert synergy) |
 
 ### 9.3 Difficulty scaling
-Night number scales: order complexity (more layers, fussier doneness), camper impatience, event intensity. Night 7 festival is a gauntlet — victory earns the **Golden Spatula** and a tour score (coins + accuracy + hearts remaining) for the leaderboard.
+Night number scales: order complexity (more layers, fussier doneness), camper impatience, event intensity. Night 5 festival is a gauntlet — victory earns the **Golden Spatula** and a tour score (coins + accuracy + hearts remaining) for the leaderboard.
 
 ### 9.4 Why roguelike fits
 The fantasy is "can you handle *tonight's* fire?" — not "did you memorize level 4." Procedural biomes + modifiers + draft builds make adaptability the skill, give streamers endless "one more tour" content, and make the Daily Roast (seeded tour, §10) a natural retention engine.
