@@ -1,6 +1,6 @@
 # Smore Simulator — Full Game Design Document
 
-**Version:** 1.0 (2026-09-25)
+**Version:** 1.1 (2026-09-25) — roguelike tour structure
 **Status:** Pre-production
 **Repo:** github.com/sen2008/smore-simulator
 
@@ -10,15 +10,16 @@
 
 *"Overcooked meets Stardew Valley at a campfire."*
 
-You run a s'mores stand traveling through America's national parks. Campers line up with specific orders; you roast marshmallows over a living pixel fire to their exact liking, stack them with premium ingredients, and serve them up for coins and tips. Master the flame, upgrade your gear, and earn 3 stars at every campsite.
+You run a s'mores stand touring through America's national parks. Campers line up with specific orders; you roast marshmallows over a living pixel fire to their exact liking, stack them with premium ingredients, and serve them up for coins and tips. Master the flame, draft upgrades between nights, and survive all 7 nights of the tour to become a Legendary Roastmaster — no two tours ever play the same.
 
-**One-sentence pitch:** A cozy-but-skill-based cooking game about achieving the perfect marshmallow roast.
+**One-sentence pitch:** A cozy roguelike cooking game about achieving the perfect marshmallow roast.
 
 ## 2. Design Pillars
 
 1. **The roast is the skill.** Fire mastery — not recipe memorization — is the core skill expression. Positioning, timing, and reading the flames separate good players from great ones.
 2. **Cozy, never punishing.** Mistakes cost tips, not runs. No lives, no game-over shame spirals. The vibe is a warm campfire, even when it's hectic.
 3. **Every campsite changes the rules.** New locations introduce new environmental twists so the core loop stays fresh across the whole campaign.
+4. **Every tour is different.** Procedural nights, drafted upgrades, and random events mean no two runs play the same — mastery is adapting, not memorizing.
 
 ## 3. Target Audience & Positioning
 
@@ -27,14 +28,16 @@ You run a s'mores stand traveling through America's national parks. Campers line
 - **Comps:** *Overcooked* (chaotic cooking), *Diner Dash* (order management), *Stardew Valley* (cozy progression).
 - **Differentiator:** No cooking game has made fire itself the main mechanic. The roast meter is the hook; everything else supports it.
 
-## 4. Core Loop
+## 4. Core Loop (the roguelike run)
 
 ```
-Campers arrive with orders → Roast mallow(s) to spec → Assemble stack
-→ Serve → Earn coins + tips → Buy upgrades/ingredients → Unlock next campsite
+Start tour → Night N: biome + modifiers drawn → Serve campers, manage fire
+→ Draft 1 of 3 upgrade cards → Traveling merchant (random stock) → Next night (harder)
+→ Survive all 7 nights → LEGENDARY ROASTMASTER. Lose all reputation → tour over.
+Between tours: unlock new biomes, tools, events, and perks (meta progression).
 ```
 
-A "day" is one shift: serve a set number of campers (or survive a timer in endless). Between days: shop, upgrade, review recipe book.
+A tour is one run: ~45–60 minutes. A night is one shift. Full details in §9.
 
 ## 5. The Roasting System (core mechanic, in depth)
 
@@ -86,35 +89,60 @@ Raw → Soft → **Golden** → Dark → Burnt. Each order specifies a target (e
   - *Couple* — matching orders; serve both golden for a "romance bonus."
 - **Rush hours:** telegraphed crowd waves; optional to trigger early for bonus ("ring the dinner bell").
 
-## 8. Economy & Progression
+## 8. Economy & Progression (run vs. meta)
 
-- **Coins:** base pay per serve + tip (accuracy × speed × customer generosity).
-- **Stars:** each campsite rated 1–3 stars on earnings + accuracy; 2+ stars unlocks the next site.
-- **Shop (between days):** tools, ingredients, cosmetic stand skins, fire pit upgrades (bigger sweet spot).
-- **No grind wall:** a skilled player can 3-star with base gear; upgrades widen margin for error and enable new strategies.
+**Within a tour (run economy):**
+- **Coins:** base pay per serve + tip (accuracy × speed × customer generosity). Coins are spent *during* the tour — they don't carry over.
+- **Reputation (hearts):** start each tour with 3 hearts. A camper who storms out costs 1 heart. Zero hearts → tour over. Cozy roguelike: losing a tour still earns meta progress, never feels wasted.
+- **Between-night draft:** after each night, choose **1 of 3 upgrade cards** (tools, perks, ingredients — see §5.5). Cards synergize (e.g., Double-prong fork + Sugar rush = mini-mallow machine). One reroll per tour, costs coins.
+- **Traveling merchant:** 3 random items per night (tools, ingredients, heart refill at a painful price). Randomized stock forces adaptation — you can't plan a build, you *discover* one.
 
-## 9. Campsites (campaign structure, ~8–10 hours)
+**Between tours (meta progression):**
+- **Campfire Tales (XP):** earned from tours (win or lose) and achievements. Spend to unlock: new biomes, mallow types, tool blueprints (added to the draft pool), night events, stand skins, starting perks.
+- **Recipe book:** persists across tours; 24 recipes to discover — the completionist thread.
+- **No grind wall:** a skilled player can win a tour with base unlocks; meta progression widens options and margins, never gates victory.
 
-1. **Pinewood Forest** — tutorial. Calm fire, simple orders. Learn the zones.
-2. **Lakeshore** — wind gusts introduced. Jumbo mallows.
-3. **Desert Mesa** — intense heat (faster everything), flare-ups. Minis.
-4. **Snowy Peaks** — fire health/stoking mechanic. Stuffed mallows. Night-only aesthetic.
-5. **Festival Grounds** — finale: rush crowds, all mechanics, critic visits. Endless unlock.
+## 9. The Tour (roguelike run structure)
 
-Each site: 6 days, day 6 = "rush day" finale. 3-star all sites → Golden Spatula trophy + sandbox skins.
+A tour = **7 nights**, ~45–60 minutes. Win by surviving night 7. Lose when reputation hits zero.
+
+### 9.1 Night generation
+Each night draws from the unlocked **biome pool** (no repeats until the pool is exhausted):
+1. **Pinewood Forest** — calm fire, simple orders. Weighted to appear early; the tutorial biome.
+2. **Lakeshore** — wind gusts. Unlocks Jumbo mallows.
+3. **Desert Mesa** — intense heat, flare-ups. Unlocks Minis.
+4. **Snowy Peaks** — fire health/stoking mechanic. Unlocks Stuffed mallows. Night-only aesthetic.
+5. **Festival Grounds** — *always night 7.* Rush crowds, all mechanics, critic visits.
+
+Each night also rolls **1–2 modifiers**, e.g.: *Windy* (stronger gusts), *Full moon* (double tips), *Short rations* (one fewer ingredient slot), *Health inspector* (burnt serves cost a heart), *Rain* (fire health drains).
+
+### 9.2 Night events (random, telegraphed at dusk)
+| Event | Effect |
+|---|---|
+| Food critic visits | One ultra-picky order; huge tip + bonus heart on success |
+| Ingredient shortage | One random ingredient unavailable all night |
+| Tour bus | Double campers, double pay, half patience |
+| Marshmallow aurora (rare) | All mallows roast 25% slower — free perfection night |
+| Grease fire | Random flare-ups all night (Desert synergy) |
+
+### 9.3 Difficulty scaling
+Night number scales: order complexity (more layers, fussier doneness), camper impatience, event intensity. Night 7 festival is a gauntlet — victory earns the **Golden Spatula** and a tour score (coins + accuracy + hearts remaining) for the leaderboard.
+
+### 9.4 Why roguelike fits
+The fantasy is "can you handle *tonight's* fire?" — not "did you memorize level 4." Procedural biomes + modifiers + draft builds make adaptability the skill, give streamers endless "one more tour" content, and make the Daily Roast (seeded tour, §10) a natural retention engine.
 
 ## 10. Game Modes
 
-- **Campaign** (above) — the main game.
-- **Endless Shift** — one fire, escalating orders, global leaderboard.
-- **Cozy Sandbox** — no timers, no fail, free ingredients. The "vibe" mode; surprisingly popular in playtests of similar games.
-- **Daily Roast** — seeded day (same orders for everyone), daily leaderboard. Retention engine.
+- **Tour Mode** — the roguelike core (§9). The game.
+- **Daily Roast** — a seeded tour, identical for every player each day, with a global leaderboard. The retention engine and streamer bait.
+- **Endless Shift** — unlocked after your first tour victory. One fire, escalating orders, leaderboard.
+- **Cozy Sandbox** — no timers, no hearts, no fail, free ingredients. The "vibe" mode; surprisingly popular in playtests of similar games.
 
 ## 11. Steamworks Integration
 
 - **Achievements (~30):** roast tiers ("Golden God": 100 golden serves), customers, secrets ("Burnt Offering": serve 10 burnt in one day).
 - **Cloud saves.**
-- **Leaderboards:** Endless + Daily Roast.
+- **Leaderboards:** Tour scores, Endless, and Daily Roast.
 - **Stats:** track for achievements and future balancing.
 - Post-launch consideration: trading cards, Steam Workshop (custom recipes/campsites).
 
@@ -150,8 +178,8 @@ Each site: 6 days, day 6 = "rush day" finale. 3-star all sites → Golden Spatul
 
 ## 16. Scope Control (MVP definition)
 
-**MVP (vertical slice, itch.io playtest):** 1 campsite, order system, 3 mallow types, 8 recipes, tier-1 upgrades, campaign day loop, no meta systems.
-**Not in MVP:** multiplayer, workshop, trading cards, voice acting, ports beyond PC.
+**MVP (vertical slice, itch.io playtest):** full tour loop — 3-biome pool, 5-night tours, 12-card draft pool, night events, hearts/reputation, 8 recipes, meta-unlock skeleton. Prove "one more tour" in playtesting before building the rest.
+**Not in MVP:** Daily Roast backend, Workshop, trading cards, voice acting, ports beyond PC.
 
 ## 17. Roadmap
 
@@ -198,7 +226,8 @@ Total: ~6 months solo/small-team to launch.
 - **Wishlist velocity:** 7k–10k at launch.
 - **Demo conversion:** ≥10% demo players wishlist.
 - **Review score:** ≥85% positive (cozy audiences review generously when the vibe lands).
-- **Year-1 revenue target:** $30k–80k at $7.99 (typical range for a well-executed small cozy title) — enough to fund the DLC pack or next game.
+- **Roguelike health:** ≥40% tour completion rate eventually (too low = too brutal, too high = no tension); median 3+ tours per player in week one ("one more tour" working).
+- **Year-1 revenue target:** $30k–80k at $7.99 (typical range for a well-executed small cozy title) — enough to fund the DLC biome pack or next game.
 
 ---
 
