@@ -124,7 +124,7 @@ Each night draws from the unlocked **biome pool** (no repeats until the pool is 
 6. **Arches** — Delicate Arch on the skyline, slickrock fins, heat shimmer. Intense desert heat: everything roasts faster, flare-ups common.
 
 **Michigan**
-7. **Isle Royale** — Lake Superior shoreline, loons on the water, moose silhouette at dusk. Sudden lake storms roll in: rain douses an unsheltered fire — keep the tarp handy (draftable gear). Unlocks Stuffed mallows.
+7. **Isle Royale** — Lake Superior shoreline, loons on the water, moose wading the shallows at dusk, a wolf pack crossing the far ridgeline at night — a nod to the island's famous wolf-moose study. Sudden lake storms roll in: rain douses an unsheltered fire — keep the tarp handy (draftable gear). Unlocks Stuffed mallows. Finish a night with full hearts and you'll hear the pack howl in approval.
 
 ### Night 5: Festival Night
 No fixed finale park — night 5 draws from the pool like any night, but always rolls the **Festival** event: string lights go up, rush crowds, all mechanics in play, critic visits. Any park can host the festival.
@@ -175,7 +175,7 @@ The fantasy is "can you handle *tonight's* fire?" — not "did you memorize leve
 4. **Zion** — sheer sandstone walls, cottonwoods, the Virgin River glinting below.
 5. **Bryce Canyon** — hoodoo amphitheater cycling sunrise hues, bristlecone pines, a circling raven.
 6. **Arches** — Delicate Arch on the skyline, slickrock fins, desert varnish streaks, heat shimmer.
-7. **Isle Royale** — Lake Superior shoreline, loons on the water, moose silhouette at dusk, northern lights on rare clear nights.
+7. **Isle Royale** — Lake Superior shoreline, loons on the water, moose wading the shallows at dusk, a wolf pack crossing the far ridgeline, northern lights on rare clear nights.
 
 Each park gets 3–4 parallax layers, 1–2 ambient wildlife species, one signature animated element, and its own dusk/night lighting treatment. Compositions are referenced from public-domain National Park Service photography — real places, real compositions.
 
