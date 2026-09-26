@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Smore Simulator</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Smore Simulator — Tour Prototype</title>
 <style>
   html, body {
     margin: 0; padding: 0; min-height: 100%;
@@ -15,12 +15,38 @@
   }
   body { padding: 10px 0 20px; box-sizing: border-box; }
   h1 { font-size: clamp(16px, 5vw, 22px); margin: 6px 0; letter-spacing: 4px; color: #ffb347; text-shadow: 2px 2px 0 #7a2c00; }
+  #wrap { position: relative; width: min(96vw, 640px); }
   canvas {
     image-rendering: pixelated; image-rendering: crisp-edges;
-    width: min(96vw, 640px); height: auto; aspect-ratio: 4 / 3;
-    border: 4px solid #3a2b1a; background: #000;
+    width: 100%; height: auto; aspect-ratio: 4 / 3; display: block;
+    border: 4px solid #3a2b1a; background: #000; box-sizing: border-box;
     cursor: crosshair; touch-action: none;
   }
+  #overlay {
+    position: absolute; inset: 4px; display: none;
+    background: rgba(5, 8, 18, 0.92);
+    flex-direction: column; align-items: center; justify-content: center;
+    text-align: center; padding: 12px; box-sizing: border-box; gap: 8px;
+  }
+  #overlay.show { display: flex; }
+  #overlay h2 { color: #ffb347; margin: 0; font-size: clamp(15px, 4.5vw, 22px); letter-spacing: 2px; }
+  #overlay p { margin: 0; font-size: clamp(11px, 3.4vw, 14px); line-height: 1.5; color: #ddd; max-width: 90%; }
+  #overlay .cards { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+  .card {
+    font-family: "Courier New", monospace; background: #1c2b1c; color: #ffe9b0;
+    border: 2px solid #ffb347; border-radius: 6px; padding: 10px 12px;
+    width: 30%; min-width: 120px; cursor: pointer; touch-action: manipulation;
+  }
+  .card b { display: block; color: #ffb347; margin-bottom: 4px; font-size: 13px; }
+  .card span { font-size: 11px; line-height: 1.4; }
+  .card:active { background: #2c422c; }
+  .bigbtn {
+    font-family: "Courier New", monospace; font-weight: bold; font-size: 16px;
+    color: #1a0f00; background: #ffb347; border: 0; border-radius: 4px;
+    padding: 12px 24px; cursor: pointer; box-shadow: 0 4px 0 #7a2c00;
+    touch-action: manipulation;
+  }
+  .bigbtn:active { transform: translateY(3px); box-shadow: 0 1px 0 #7a2c00; }
   .buttons {
     display: flex; flex-wrap: wrap; gap: 8px; justify-content: center;
     margin-top: 10px; max-width: 96vw;
@@ -28,66 +54,114 @@
   .buttons button {
     font-family: "Courier New", monospace; font-weight: bold; font-size: 15px;
     color: #1a0f00; background: #ffb347; border: 0;
-    padding: 12px 16px; min-width: 64px; border-radius: 4px;
+    padding: 12px 14px; min-width: 60px; border-radius: 4px;
     box-shadow: 0 4px 0 #7a2c00; touch-action: manipulation; cursor: pointer;
   }
   .buttons button:active { transform: translateY(3px); box-shadow: 0 1px 0 #7a2c00; }
-  .buttons button.eat { background: #7dff8a; box-shadow: 0 4px 0 #1d6b25; }
-  .buttons button.eat:active { box-shadow: 0 1px 0 #1d6b25; }
+  .buttons button.serve { background: #7dff8a; box-shadow: 0 4px 0 #1d6b25; }
+  .buttons button.serve:active { box-shadow: 0 1px 0 #1d6b25; }
   .buttons button.fresh { background: #9ad1ff; box-shadow: 0 4px 0 #2c5a7a; }
   .buttons button.fresh:active { box-shadow: 0 1px 0 #2c5a7a; }
-  .hint { font-size: 13px; margin-top: 10px; color: #ccc; text-align: center; line-height: 1.6; max-width: 94vw; padding: 0 8px; }
+  .hint { font-size: 12px; margin-top: 10px; color: #ccc; text-align: center; line-height: 1.6; max-width: 94vw; padding: 0 8px; }
   .hint b { color: #ffb347; }
 </style>
 </head>
 <body>
 <h1>SMORE SIMULATOR</h1>
-<canvas id="game" width="256" height="192"></canvas>
+<div id="wrap">
+  <canvas id="game" width="256" height="192"></canvas>
+  <div id="overlay"></div>
+</div>
 <div class="buttons">
   <button id="b-graham" type="button">Graham</button>
   <button id="b-choc" type="button">Choc</button>
   <button id="b-mallow" type="button">Mallow</button>
-  <button id="b-eat" class="eat" type="button">EAT!</button>
-  <button id="b-fresh" class="fresh" type="button">New mallow</button>
+  <button id="b-serve" class="serve" type="button">SERVE</button>
+  <button id="b-fresh" class="fresh" type="button">New</button>
 </div>
-<div class="hint">
-  <b>Move:</b> drag on the fire with your finger (or mouse / arrow keys on desktop).<br>
-  Tap the buttons to stack: graham &rarr; chocolate &rarr; mallow &rarr; graham, then <b>EAT!</b><br>
-  Hold the marshmallow over the flames. Golden = 100pts, underdone = 30, dark = 50, burnt = 10.
+<div class="hint" id="hint">
+  <b>Tour prototype:</b> survive 5 nights, keep your 3 hearts. Drag the stick over the fire,
+  stack to match each camper's order bubble, then SERVE. Draft an upgrade after each night.
 </div>
 <script>
+'use strict';
 const cv = document.getElementById('game');
 const ctx = cv.getContext('2d');
+const overlay = document.getElementById('overlay');
 ctx.imageSmoothingEnabled = false;
 const W = 256, H = 192;
 
-// ---------- state ----------
-let tip = { x: 150, y: 60 };          // marshmallow tip position
+// ---------------- tuning ----------------
+const TUNING = {
+  nights: 5,
+  nightLength: 60,      // seconds of serving per night
+  spawnEvery: 8,        // seconds between campers
+  festivalSpawn: 5,
+  maxWaiting: 3,
+  patience: 40,         // seconds before a camper storms out
+  heatRate: 0.28,
+};
+
+// ---------------- state ----------------
+let screen = 'title'; // title | night | draft | over | win
+let tip = { x: 150, y: 60 };
 let mouse = { x: 150, y: 60, active: false };
 let keys = {};
-let roast = 0;                        // 0 raw -> 1 burnt
-let burntAnnounced = false;
-let layers = [];                      // plate layers: 'graham' | 'chocolate' | 'mallow'
-let score = 0;
-let timeLeft = 90;
-let gameOver = false;
-let message = '', messageT = 0;
+let roast = 0;
+let layers = [];
 let particles = [];
 let stars = [];
-let popScore = null;                  // floating +pts text
+let flashT = 0;
+
+let tour = null; // {night, hearts, coins, mods, parkPool, park, timeLeft, campers, spawnT, servedThisNight, rainT, raining, windT}
+let message = '', messageT = 0;
 
 for (let i = 0; i < 70; i++) stars.push({ x: Math.random()*W, y: Math.random()*90, tw: Math.random()*6.28 });
 
-const fireX = 80, fireY = 150;        // campfire center (ground level)
+const fireY = 150;
+const BASE_FIRE_X = 80;
 
-// ---------- audio (tiny) ----------
+const PARKS = {
+  yosemite: { name: 'Yosemite',     effect: 'calm' },
+  zion:     { name: 'Zion',         effect: 'wind' },
+  isle:     { name: 'Isle Royale',  effect: 'rain' },
+};
+
+const TARGETS = {
+  soft:   { label: 'soft',   c: 0.23, w: 0.12 },
+  golden: { label: 'GOLDEN', c: 0.52, w: 0.17 },
+  dark:   { label: 'dark',   c: 0.80, w: 0.10 },
+};
+
+const CARDS = [
+  { name: 'Insulated Glove', desc: 'Doneness windows +30%', apply: m => m.win += 0.30 },
+  { name: 'Sugar Rush',      desc: 'Roast 25% faster',       apply: m => m.rate *= 1.25 },
+  { name: 'Patient Crowd',   desc: 'Campers 30% more patient', apply: m => m.pat *= 1.30 },
+  { name: 'Big Tips',        desc: '+25% tips',              apply: m => m.tips *= 1.25 },
+  { name: 'Extra Heart',     desc: '+1 reputation heart',    apply: (m, t) => { t.hearts = Math.min(5, t.hearts + 1); } },
+  { name: 'Steady Hands',    desc: 'Roast 15% slower, windows +20%', apply: m => { m.rate *= 0.85; m.win += 0.20; } },
+  { name: 'Campfire Songs',  desc: 'Campers arrive 20% slower', apply: m => m.spawn *= 1.20 },
+  { name: 'Double Chocolate',desc: '+15 coins per serve',    apply: m => m.flat += 15 },
+  { name: 'Night Owl',       desc: '+15s on every night',    apply: m => m.night += 15 },
+  { name: 'Windbreaker',     desc: 'Park effects halved',    apply: m => m.resist = 0.5 },
+  { name: 'Tarp',            desc: 'Rain can\'t slow your roast', apply: m => m.tarp = true },
+  { name: 'Lucky Lighter',   desc: 'First serve each night +25 coins', apply: m => m.firstBonus = 25 },
+];
+
+function newMods() {
+  return { rate: 1, win: 0, pat: 1, tips: 1, spawn: 1, flat: 0, night: 0, resist: 1, tarp: false, firstBonus: 0 };
+}
+function best() { return parseInt(localStorage.getItem('smore_best') || '0', 10); }
+function wins() { return parseInt(localStorage.getItem('smore_wins') || '0', 10); }
+
+// ---------------- audio ----------------
 let actx = null;
 function beep(freq, dur, type) {
   try {
     if (!actx) actx = new (window.AudioContext || window.webkitAudioContext)();
     const o = actx.createOscillator(), g = actx.createGain();
     o.type = type || 'square'; o.frequency.value = freq;
-    g.gain.setValueAtTime(0.06, actx.currentTime);
+    g.gain.setValueAtTime(0.05, actx.currentTime);
     g.gain.exponentialRampToValueAtTime(0.0001, actx.currentTime + dur);
     o.connect(g); g.connect(actx.destination);
     o.start(); o.stop(actx.currentTime + dur);
@@ -95,14 +169,139 @@ function beep(freq, dur, type) {
 }
 const sizzle = () => beep(120 + Math.random()*80, 0.05, 'sawtooth');
 const pop = () => { beep(440, 0.08); setTimeout(() => beep(660, 0.1), 80); };
+const sad = () => beep(140, 0.3, 'sawtooth');
 
-// ---------- input ----------
-function canvasPoint(clientX, clientY) {
-  const r = cv.getBoundingClientRect();
-  return {
-    x: (clientX - r.left) / r.width * W,
-    y: (clientY - r.top) / r.height * H
+// ---------------- tour flow ----------------
+function startTour() {
+  tour = {
+    night: 0, hearts: 3, coins: 0, mods: newMods(),
+    parkPool: [], park: null, timeLeft: 0, campers: [],
+    spawnT: 0, servedThisNight: 0, rainT: 8, raining: false, windT: 0,
   };
+  hideOverlay();
+  startNight();
+}
+
+function drawPark() {
+  if (tour.parkPool.length === 0) tour.parkPool = Object.keys(PARKS);
+  const i = Math.floor(Math.random() * tour.parkPool.length);
+  return tour.parkPool.splice(i, 1)[0];
+}
+
+function startNight() {
+  tour.night++;
+  tour.park = drawPark();
+  tour.timeLeft = TUNING.nightLength + tour.mods.night;
+  tour.campers = [];
+  tour.spawnT = 1.5;
+  tour.servedThisNight = 0;
+  tour.rainT = 8; tour.raining = false;
+  layers = []; roast = 0;
+  screen = 'night';
+  hideOverlay();
+  say(PARKS[tour.park].name + ' — Night ' + tour.night + ' of ' + TUNING.nights);
+}
+
+function endNight() {
+  if (tour.night >= TUNING.nights) { winTour(); return; }
+  screen = 'draft';
+  // pick 3 distinct cards
+  const pool = CARDS.slice();
+  const picks = [];
+  for (let i = 0; i < 3; i++) picks.push(pool.splice(Math.floor(Math.random()*pool.length), 1)[0]);
+  let html = '<h2>NIGHT ' + tour.night + ' COMPLETE</h2><p>' + PARKS[tour.park].name +
+    ' survived. Choose an upgrade:</p><div class="cards">';
+  picks.forEach((c, i) => {
+    html += '<button class="card" data-i="' + i + '"><b>' + c.name + '</b><span>' + c.desc + '</span></button>';
+  });
+  html += '</div><p>Hearts: ' + tour.hearts + ' &nbsp; Coins: ' + tour.coins + '</p>';
+  showOverlay(html);
+  overlay.querySelectorAll('.card').forEach(el => {
+    el.addEventListener('click', () => {
+      picks[parseInt(el.dataset.i, 10)].apply(tour.mods, tour);
+      pop();
+      startNight();
+    });
+  });
+}
+
+function gameOver() {
+  screen = 'over';
+  const b = best();
+  if (tour.coins > b) localStorage.setItem('smore_best', String(tour.coins));
+  showOverlay('<h2>THE FIRE WENT OUT</h2><p>Tour ended on night ' + tour.night + ' of ' + TUNING.nights +
+    ' at ' + PARKS[tour.park].name + '.</p><p>Coins: <b>' + tour.coins + '</b> &nbsp; Best: ' + Math.max(b, tour.coins) + '</p>' +
+    '<button class="bigbtn" id="again">NEW TOUR</button>');
+  document.getElementById('again').addEventListener('click', startTour);
+  sad();
+}
+
+function winTour() {
+  screen = 'win';
+  const b = best(), w = wins();
+  if (tour.coins > b) localStorage.setItem('smore_best', String(tour.coins));
+  localStorage.setItem('smore_wins', String(w + 1));
+  showOverlay('<h2>LEGENDARY ROASTMASTER!</h2><p>You survived all ' + TUNING.nights + ' nights.</p>' +
+    '<p>Coins: <b>' + tour.coins + '</b> &nbsp; Best: ' + Math.max(b, tour.coins) + ' &nbsp; Tours won: ' + (w+1) + '</p>' +
+    '<button class="bigbtn" id="again">NEW TOUR</button>');
+  document.getElementById('again').addEventListener('click', startTour);
+  pop(); setTimeout(pop, 200); setTimeout(pop, 400);
+}
+
+function showOverlay(html) { overlay.innerHTML = html; overlay.classList.add('show'); }
+function hideOverlay() { overlay.classList.remove('show'); }
+
+function showTitle() {
+  screen = 'title';
+  showOverlay('<h2>SMORE SIMULATOR</h2>' +
+    '<p>A 5-night tour through the national parks.<br>Keep your 3 hearts. Draft upgrades. Become a <b>Legendary Roastmaster</b>.</p>' +
+    '<p>Parks: Yosemite (calm) · Zion (wind) · Isle Royale (rain)</p>' +
+    '<p>Best: ' + best() + ' &nbsp; Tours won: ' + wins() + '</p>' +
+    '<button class="bigbtn" id="start">START TOUR</button>');
+  document.getElementById('start').addEventListener('click', startTour);
+}
+
+// ---------------- campers & orders ----------------
+function spawnCamper() {
+  const r = Math.random();
+  const key = r < 0.5 ? 'golden' : (r < 0.75 ? 'soft' : 'dark');
+  const cols = ['#c94f4f', '#4f7dc9', '#4fc94f', '#c9a24f', '#9a4fc9'];
+  tour.campers.push({
+    key,
+    patience: TUNING.patience * tour.mods.pat,
+    maxPatience: TUNING.patience * tour.mods.pat,
+    color: cols[Math.floor(Math.random()*cols.length)],
+    bob: Math.random() * 6.28,
+  });
+}
+
+function serve() {
+  if (screen !== 'night' || !tour) return;
+  if (layers.length !== 4) { say('Stack all 4 layers first!'); return; }
+  if (tour.campers.length === 0) { say('No campers waiting!'); return; }
+  const camper = tour.campers[0];
+  const T = TARGETS[camper.key];
+  const w = T.w * (1 + tour.mods.win);
+  const d = Math.abs(roast - T.c);
+  const festival = tour.night === TUNING.nights;
+  let pts, msg;
+  if (d <= w)       { pts = 100; msg = 'PERFECT ' + T.label + '!'; }
+  else if (d <= w*2){ pts = 50;  msg = 'Good enough.'; }
+  else              { pts = 15;  msg = 'They wanted ' + T.label + '...'; }
+  pts = Math.round(pts * tour.mods.tips * (festival ? 2 : 1)) + tour.mods.flat;
+  if (tour.servedThisNight === 0) pts += tour.mods.firstBonus;
+  tour.coins += pts;
+  tour.servedThisNight++;
+  tour.campers.shift();
+  layers = []; roast = 0;
+  pop();
+  say(msg + ' +' + pts);
+}
+
+// ---------------- input ----------------
+function canvasPoint(cx, cy) {
+  const r = cv.getBoundingClientRect();
+  return { x: (cx - r.left) / r.width * W, y: (cy - r.top) / r.height * H };
 }
 cv.addEventListener('mousemove', e => {
   const p = canvasPoint(e.clientX, e.clientY);
@@ -115,88 +314,97 @@ function touchMove(e) {
   const t = e.touches[0];
   const p = canvasPoint(t.clientX, t.clientY);
   mouse.x = p.x; mouse.y = p.y; mouse.active = true;
-  if (gameOver) restart();
 }
-cv.addEventListener('mousedown', () => { if (gameOver) restart(); });
 window.addEventListener('keydown', e => {
   keys[e.key.toLowerCase()] = true;
   handleKey(e.key.toLowerCase());
 });
 window.addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false; });
 
-// on-screen buttons (touch + mouse)
-function bindBtn(id, k) {
-  const el = document.getElementById(id);
-  el.addEventListener('pointerdown', e => { e.preventDefault(); handleKey(k); });
-}
-bindBtn('b-graham', 'g');
-bindBtn('b-choc', 'c');
-bindBtn('b-mallow', 'm');
-bindBtn('b-eat', 'e');
-bindBtn('b-fresh', 'n');
-
 function handleKey(k) {
-  if (gameOver) { if (k === 'r') restart(); return; }
-  if (k === 'n') { roast = 0; burntAnnounced = false; say('Fresh mallow!'); }
+  if (screen === 'title' && (k === 'enter' || k === ' ')) { startTour(); return; }
+  if ((screen === 'over' || screen === 'win') && k === 'r') { startTour(); return; }
+  if (screen !== 'night') return;
+  if (k === 'n') { roast = 0; say('Fresh mallow!'); }
   if (k === 'g') addLayer('graham');
   if (k === 'c') addLayer('chocolate');
   if (k === 'm') addLayer('mallow');
-  if (k === 'e') eat();
+  if (k === 'e') serve();
 }
+function bindBtn(id, k) {
+  document.getElementById(id).addEventListener('pointerdown', e => { e.preventDefault(); handleKey(k); });
+}
+bindBtn('b-graham', 'g'); bindBtn('b-choc', 'c');
+bindBtn('b-mallow', 'm'); bindBtn('b-serve', 'e'); bindBtn('b-fresh', 'n');
 
 function say(t) { message = t; messageT = 2.5; }
-
-function expectedNext() {
-  return ['graham', 'chocolate', 'mallow', 'graham'][layers.length];
-}
+function expectedNext() { return ['graham', 'chocolate', 'mallow', 'graham'][layers.length]; }
 function addLayer(kind) {
-  if (gameOver) return;
+  if (screen !== 'night') return;
   const want = expectedNext();
-  if (!want) { say('S\'more is done! Press E to eat.'); return; }
+  if (!want) { say('S\'more is done — SERVE it!'); return; }
   if (kind !== want) { say('Wrong order! Need: ' + want); beep(160, 0.15, 'sawtooth'); return; }
   layers.push(kind);
   beep(300 + layers.length * 120, 0.08);
-  if (layers.length === 4) say('Tap EAT!');
+  if (layers.length === 4) say('Tap SERVE!');
 }
 
-// ---------- game logic ----------
-function mallowQuality() {
-  if (roast < 0.35) return { name: 'underdone', pts: 30 };
-  if (roast < 0.7)  return { name: 'GOLDEN!',   pts: 100 };
-  if (roast < 0.9)  return { name: 'dark',      pts: 50 };
-  return { name: 'burnt', pts: 10 };
+// ---------------- update ----------------
+function fireX(now) {
+  if (screen === 'night' && tour && PARKS[tour.park].effect === 'wind') {
+    return BASE_FIRE_X + Math.sin(now / 900) * 20 * tour.mods.resist;
+  }
+  return BASE_FIRE_X;
 }
-function eat() {
-  if (layers.length !== 4) { say('Stack all 4 layers first!'); return; }
-  const q = mallowQuality();
-  score += q.pts;
-  popScore = { x: 200, y: 90, t: 1.5, txt: '+' + q.pts + ' ' + q.name };
-  pop();
-  layers = [];
-  roast = 0; burntAnnounced = false;
-  say(q.pts === 100 ? 'PERFECT s\'more!' : 'Ate a ' + q.name + ' s\'more.');
-}
-function restart() {
-  score = 0; timeLeft = 90; gameOver = false;
-  layers = []; roast = 0; burntAnnounced = false;
-  say('New round! Make s\'mores!');
-}
-
-function overFire() {
-  return tip.x > fireX - 22 && tip.x < fireX + 22 && tip.y > fireY - 46 && tip.y < fireY + 4;
+function overFire(fx) {
+  return tip.x > fx - 22 && tip.x < fx + 22 && tip.y > fireY - 46 && tip.y < fireY + 4;
 }
 
 let last = performance.now();
 function update(now) {
   const dt = Math.min((now - last) / 1000, 0.05);
   last = now;
-  if (!gameOver) {
-    timeLeft -= dt;
-    if (timeLeft <= 0) { timeLeft = 0; gameOver = true; say(''); }
+  const fx = fireX(now);
+
+  if (screen === 'night' && tour) {
+    tour.timeLeft -= dt;
+    tour.windT += dt;
+
+    // rain (Isle Royale)
+    if (PARKS[tour.park].effect === 'rain') {
+      tour.rainT -= dt;
+      if (tour.rainT <= 0) {
+        tour.raining = !tour.raining;
+        tour.rainT = tour.raining ? 5 : 11;
+        if (tour.raining) say('Lake storm! Shelter the fire!');
+      }
+    }
+
+    // spawn campers
+    tour.spawnT -= dt;
+    const every = (tour.night === TUNING.nights ? TUNING.festivalSpawn : TUNING.spawnEvery) * tour.mods.spawn;
+    if (tour.spawnT <= 0 && tour.campers.length < TUNING.maxWaiting) {
+      spawnCamper();
+      tour.spawnT = every;
+    }
+
+    // patience
+    for (let i = tour.campers.length - 1; i >= 0; i--) {
+      const c = tour.campers[i];
+      c.patience -= dt; c.bob += dt * 3;
+      if (c.patience <= 0) {
+        tour.campers.splice(i, 1);
+        tour.hearts--;
+        flashT = 0.6;
+        sad();
+        say('A camper stormed out! Hearts: ' + tour.hearts);
+        if (tour.hearts <= 0) { gameOver(); }
+      }
+    }
 
     // move tip
     if (mouse.active) { tip.x = mouse.x; tip.y = mouse.y; }
-    const sp = 120 * dt;
+    const sp = 140 * dt;
     if (keys['arrowleft'])  tip.x -= sp;
     if (keys['arrowright']) tip.x += sp;
     if (keys['arrowup'])    tip.y -= sp;
@@ -205,155 +413,207 @@ function update(now) {
     tip.y = Math.max(4, Math.min(H - 4, tip.y));
 
     // roast
-    if (overFire()) {
-      roast = Math.min(1, roast + dt * 0.28);
-      if (Math.random() < 0.3) sizzle();
-      if (roast > 0.9 && !burntAnnounced) { burntAnnounced = true; say('BURNT! Tap New mallow.'); beep(140, 0.3, 'sawtooth'); }
-      // ember particles
+    if (overFire(fx)) {
+      let rate = TUNING.heatRate * tour.mods.rate;
+      if (tour.raining) rate *= tour.mods.tarp ? 1 : (0.35 + 0.3 * (1 - tour.mods.resist));
+      roast = Math.min(1, roast + dt * rate);
+      if (Math.random() < 0.25) sizzle();
       if (Math.random() < 0.5) particles.push({ x: tip.x + (Math.random()*8-4), y: tip.y, vy: -20 - Math.random()*20, life: 0.5, c: '#ff9d2e' });
     }
+    if (tour.raining && Math.random() < 0.6) {
+      particles.push({ x: Math.random()*W, y: -4, vy: 120, life: 1.6, c: '#6fa8dc', rain: true });
+    }
+
     // flame particles
     for (let i = 0; i < 3; i++) particles.push({
-      x: fireX + (Math.random()*28 - 14), y: fireY - 4,
+      x: fx + (Math.random()*28 - 14), y: fireY - 4,
       vy: -40 - Math.random()*40, life: 0.4 + Math.random()*0.4,
       c: ['#ff3d00', '#ff9d2e', '#ffe14d'][Math.floor(Math.random()*3)]
     });
-    // message timer
-    if (messageT > 0) messageT -= dt;
-    if (popScore) { popScore.t -= dt; popScore.y -= 20*dt; if (popScore.t <= 0) popScore = null; }
+
+    if (tour.timeLeft <= 0) { tour.timeLeft = 0; endNight(); }
   }
-  // particles always update
+
+  if (messageT > 0) messageT -= dt;
+  if (flashT > 0) flashT -= dt;
   for (const p of particles) { p.y += p.vy * dt; p.life -= dt; }
   particles = particles.filter(p => p.life > 0);
   for (const s of stars) s.tw += dt;
-  draw();
+  draw(now, fx);
   requestAnimationFrame(update);
 }
 
-// ---------- drawing ----------
+// ---------------- drawing ----------------
 function px(x, y, w, h, c) { ctx.fillStyle = c; ctx.fillRect(Math.round(x), Math.round(y), Math.round(w), Math.round(h)); }
 
-function mallowColor() {
-  // white -> golden -> dark brown -> black
+function mallowColorAt(r) {
   const stops = [[255,255,255],[245,200,110],[138,90,43],[26,26,26]];
   const pos = [0, 0.5, 0.8, 1.0];
   let i = 0;
-  while (i < pos.length - 2 && roast > pos[i+1]) i++;
-  const a = pos[i], b = pos[i+1], t = Math.max(0, Math.min(1, (roast - a) / (b - a)));
+  while (i < pos.length - 2 && r > pos[i+1]) i++;
+  const a = pos[i], b = pos[i+1], t = Math.max(0, Math.min(1, (r - a) / (b - a)));
   const lerp = (u, v) => Math.round(u + (v - u) * t);
-  const [r1,g1,b1] = stops[i], [r2,g2,b2] = stops[i+1];
-  return 'rgb(' + lerp(r1,r2) + ',' + lerp(g1,g2) + ',' + lerp(b1,b2) + ')';
+  const A = stops[i], B = stops[i+1];
+  return 'rgb(' + lerp(A[0],B[0]) + ',' + lerp(A[1],B[1]) + ',' + lerp(A[2],B[2]) + ')';
 }
+function targetColor(key) { return mallowColorAt(TARGETS[key].c); }
 
-function draw() {
-  // sky
+function drawBackground(parkKey) {
   px(0, 0, W, H, '#0b1020');
-  // stars
   for (const s of stars) {
     const a = 0.4 + 0.6 * Math.abs(Math.sin(s.tw));
     ctx.fillStyle = 'rgba(255,255,255,' + a.toFixed(2) + ')';
     ctx.fillRect(s.x | 0, s.y | 0, 1, 1);
   }
+  if (parkKey === 'yosemite') {
+    // granite cliff + waterfall
+    px(0, 20, 70, 120, '#5a5a6e'); px(8, 30, 54, 100, '#6e6e80');
+    px(30, 20, 10, 120, '#9ad1ff'); // waterfall
+    for (let y = 24; y < 140; y += 8) px(31, y + (performance.now()/200 % 8), 8, 2, '#d8f0ff');
+    px(150, 60, 106, 80, '#2a3a2a'); // pine ridge
+    for (let x = 150; x < 256; x += 14) { px(x, 96, 8, 44, '#1c2e1c'); px(x-3, 88, 14, 12, '#2e5a2e'); }
+  } else if (parkKey === 'zion') {
+    // canyon walls
+    px(0, 30, 52, 112, '#8a4a2a'); px(6, 40, 40, 92, '#a85e36');
+    px(204, 30, 52, 112, '#7a3e22'); px(210, 40, 40, 92, '#96522e');
+    px(52, 128, 152, 12, '#4a6a8a'); // river glint
+    for (let x = 56; x < 200; x += 12) px(x, 130 + (performance.now()/300 % 6), 8, 2, '#9ad1ff');
+  } else if (parkKey === 'isle') {
+    // lake superior + ridgeline + moose
+    px(0, 100, W, 42, '#123a5a'); // lake
+    for (let x = 0; x < W; x += 18) px(x, 112 + (performance.now()/400 % 8), 12, 2, 'rgba(154,209,255,0.5)');
+    px(150, 60, 106, 42, '#1a2e22'); // far ridgeline
+    // moose silhouette at dusk
+    const mx = 196;
+    px(mx, 92, 18, 10, '#0a0f0a');       // body
+    px(mx+12, 82, 6, 12, '#0a0f0a');     // neck/head
+    px(mx+4, 102, 3, 8, '#0a0f0a'); px(mx+11, 102, 3, 8, '#0a0f0a'); // legs
+    px(mx+13, 78, 6, 2, '#0a0f0a');      // antlers
+  }
   // moon
-  px(218, 14, 16, 16, '#e8e6c9');
-  px(221, 16, 3, 3, '#c9c7a8'); px(227, 21, 4, 4, '#c9c7a8');
+  px(218, 10, 14, 14, '#e8e6c9');
   // ground
-  px(0, 138, W, H - 138, '#1c3a1c');
-  px(0, 138, W, 3, '#2e5a2e');
+  const gc = parkKey === 'zion' ? '#3a2a1c' : (parkKey === 'isle' ? '#16302a' : '#1c3a1c');
+  px(0, 142, W, H - 142, gc);
+  px(0, 142, W, 3, parkKey === 'zion' ? '#5a422a' : '#2e5a2e');
+}
 
-  // fire pit: stones
+function drawFire(fx) {
   const stoneX = [-26, -18, -10, -2, 6, 14, 22];
-  stoneX.forEach((o, i) => px(fireX + o, fireY - 2 + (i % 2), 9, 6, i % 2 ? '#6b6b6b' : '#8a8a8a'));
-  // logs
-  px(fireX - 16, fireY - 10, 34, 6, '#5a3a1a');
-  px(fireX - 14, fireY - 16, 30, 5, '#6e4a22');
-  // flames: stacked pixel blobs
+  stoneX.forEach((o, i) => px(fx + o, fireY - 2 + (i % 2), 9, 6, i % 2 ? '#6b6b6b' : '#8a8a8a'));
+  px(fx - 16, fireY - 10, 34, 6, '#5a3a1a');
+  px(fx - 14, fireY - 16, 30, 5, '#6e4a22');
   const t = performance.now() / 120;
+  const cols = ['#ff3d00', '#ff9d2e', '#ffe14d', '#fff7b0', '#ffe14d'];
   for (let i = 0; i < 5; i++) {
     const h = 18 + Math.sin(t + i * 1.7) * 7 + Math.random() * 4;
     const wdt = 22 - i * 3;
-    const cols = ['#ff3d00', '#ff9d2e', '#ffe14d', '#fff7b0', '#ffe14d'];
-    px(fireX - wdt / 2, fireY - 12 - h + i * 5, wdt, 6, cols[i]);
+    px(fx - wdt / 2, fireY - 12 - h + i * 5, wdt, 6, cols[i]);
   }
-  // glow
   ctx.fillStyle = 'rgba(255,140,40,0.08)';
-  ctx.beginPath(); ctx.arc(fireX, fireY - 20, 46, 0, 7); ctx.fill();
-
-  // particles
+  ctx.beginPath(); ctx.arc(fx, fireY - 20, 46, 0, 7); ctx.fill();
   for (const p of particles) {
-    ctx.globalAlpha = Math.max(0, p.life * 2);
-    px(p.x, p.y, 2, 2, p.c);
+    ctx.globalAlpha = Math.max(0, Math.min(1, p.life * 2));
+    if (p.rain) { ctx.strokeStyle = p.c; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(p.x - 2, p.y + 6); ctx.stroke();
+    } else px(p.x, p.y, 2, 2, p.c);
     ctx.globalAlpha = 1;
   }
+}
 
-  // plate (right side)
+function drawCampers() {
+  tour.campers.forEach((c, i) => {
+    const x = 18 + i * 40, y = 108 + Math.sin(c.bob) * 1.5;
+    // body + head
+    px(x, y, 12, 16, c.color);
+    px(x + 2, y - 8, 8, 8, '#e8b88a');
+    px(x + 2, y - 10, 8, 3, '#333'); // hat
+    // order bubble: target doneness swatch
+    px(x - 2, y - 26, 16, 12, '#000');
+    px(x - 1, y - 25, 14, 6, targetColor(c.key));
+    ctx.fillStyle = '#fff'; ctx.font = '5px monospace';
+    ctx.fillText(TARGETS[c.key].label[0].toUpperCase(), x + 3, y - 15);
+    // patience bar
+    const pw = 20 * (c.patience / c.maxPatience);
+    px(x - 4, y + 18, 20, 3, '#400');
+    px(x - 4, y + 18, pw, 3, c.patience > c.maxPatience * 0.3 ? '#7dff8a' : '#ff4d4d');
+  });
+}
+
+function drawPlate() {
   const plateX = 196, plateY = 150;
   px(plateX - 24, plateY, 52, 4, '#9a9a9a');
   px(plateX - 20, plateY + 4, 44, 3, '#777');
   let ly = plateY;
   for (const l of layers) {
-    if (l === 'graham')    { ly -= 5; px(plateX - 18, ly, 40, 5, '#d9a45b'); px(plateX - 10, ly + 2, 3, 1, '#b07f3a'); px(plateX + 6, ly + 2, 3, 1, '#b07f3a'); }
+    if (l === 'graham')    { ly -= 5; px(plateX - 18, ly, 40, 5, '#d9a45b'); }
     if (l === 'chocolate') { ly -= 4; px(plateX - 16, ly, 36, 4, '#4a2410'); }
-    if (l === 'mallow')    { ly -= 7; px(plateX - 15, ly, 34, 7, mallowColor()); }
+    if (l === 'mallow')    { ly -= 7; px(plateX - 15, ly, 34, 7, mallowColorAt(roast)); }
   }
-  // next-layer hint
   const want = expectedNext();
   ctx.fillStyle = '#aaa'; ctx.font = '6px monospace';
-  ctx.fillText(want ? 'next: ' + want + ' (' + want[0].toUpperCase() + ')' : 'tap EAT!', plateX - 24, plateY + 16);
+  ctx.fillText(want ? 'next: ' + want : 'SERVE!', plateX - 24, plateY + 16);
+}
 
-  // stick + marshmallow (held from bottom-right)
-  const handX = W - 8, handY = H + 4;
+function drawStick() {
   ctx.strokeStyle = '#7a5a30'; ctx.lineWidth = 3;
-  ctx.beginPath(); ctx.moveTo(handX, handY); ctx.lineTo(tip.x, tip.y); ctx.stroke();
-  // marshmallow
-  px(tip.x - 6, tip.y - 9, 12, 14, mallowColor());
+  ctx.beginPath(); ctx.moveTo(W - 8, H + 4); ctx.lineTo(tip.x, tip.y); ctx.stroke();
+  px(tip.x - 6, tip.y - 9, 12, 14, mallowColorAt(roast));
   px(tip.x - 6, tip.y - 9, 12, 3, 'rgba(255,255,255,0.35)');
-  if (roast > 0.9) { px(tip.x - 6, tip.y - 9, 12, 14, 'rgba(0,0,0,0.25)'); }
+}
 
-  // roast meter (top-left)
-  ctx.fillStyle = '#222'; ctx.fillRect(8, 8, 100, 10);
-  const goldenL = 0.35, goldenR = 0.7;
-  px(8 + 100 * goldenL, 8, 100 * (goldenR - goldenL), 10, 'rgba(255,215,80,0.5)');
-  px(8, 8, 100 * roast, 10, mallowColor());
+function drawHUD() {
+  // roast meter with golden band (widened by mods)
+  const m = tour.mods;
+  const gc = TARGETS.golden.c, gw = TARGETS.golden.w * (1 + m.win);
+  px(8, 8, 100, 10, '#222');
+  px(8 + 100 * (gc - gw), 8, 100 * gw * 2, 10, 'rgba(255,215,80,0.5)');
+  px(8, 8, 100 * roast, 10, mallowColorAt(roast));
   ctx.strokeStyle = '#fff'; ctx.lineWidth = 1; ctx.strokeRect(8.5, 8.5, 100, 10);
   ctx.fillStyle = '#fff'; ctx.font = '7px monospace';
   ctx.fillText('ROAST', 8, 26);
-  ctx.fillText('SCORE ' + score, 120, 15);
-  ctx.fillText('TIME ' + Math.ceil(timeLeft), 120, 26);
 
-  // fire zone hint (faint)
-  ctx.strokeStyle = 'rgba(255,160,60,0.25)'; ctx.setLineDash([3, 3]);
-  ctx.strokeRect(fireX - 22, fireY - 46, 44, 50);
-  ctx.setLineDash([]);
+  // night / hearts / coins / time
+  ctx.fillText('NIGHT ' + tour.night + '/' + TUNING.nights, 120, 15);
+  ctx.fillText('TIME ' + Math.ceil(tour.timeLeft), 120, 26);
+  ctx.fillStyle = '#ffd700'; ctx.font = '8px monospace';
+  ctx.fillText('$' + tour.coins, 200, 15);
+  // hearts
+  for (let i = 0; i < 5; i++) {
+    const on = i < tour.hearts;
+    px(200 + i * 10, 20, 8, 7, on ? '#ff4d5e' : '#331116');
+    px(202 + i * 10, 18, 4, 3, on ? '#ff4d5e' : '#331116');
+  }
+  ctx.fillStyle = '#aaa'; ctx.font = '6px monospace';
+  ctx.fillText(PARKS[tour.park].name.toUpperCase(), 8, 190);
+}
 
-  // message
+function draw(now, fx) {
+  const parkKey = (screen === 'night' || screen === 'draft') && tour ? tour.park : 'yosemite';
+  drawBackground(parkKey);
+  drawFire(fx);
+
+  if (screen === 'night' && tour) {
+    drawCampers();
+    drawPlate();
+    drawStick();
+    drawHUD();
+  } else if (tour && (screen === 'draft')) {
+    drawHUD();
+  }
+
+  if (flashT > 0) { ctx.fillStyle = 'rgba(255,40,40,' + (flashT * 0.4).toFixed(2) + ')'; ctx.fillRect(0, 0, W, H); }
+
   if (messageT > 0 && message) {
-    ctx.fillStyle = '#000'; ctx.fillRect(28, 60, W - 56, 20);
-    ctx.strokeStyle = '#ffb347'; ctx.strokeRect(28.5, 60.5, W - 57, 19);
+    ctx.fillStyle = '#000'; ctx.fillRect(18, 60, W - 36, 20);
+    ctx.strokeStyle = '#ffb347'; ctx.strokeRect(18.5, 60.5, W - 37, 19);
     ctx.fillStyle = '#ffb347'; ctx.font = '8px monospace'; ctx.textAlign = 'center';
-    ctx.fillText(message, W / 2, 73);
-    ctx.textAlign = 'left';
-  }
-  // floating score
-  if (popScore) {
-    ctx.globalAlpha = Math.min(1, popScore.t * 2);
-    ctx.fillStyle = '#ffe14d'; ctx.font = '10px monospace'; ctx.textAlign = 'center';
-    ctx.fillText(popScore.txt, popScore.x, popScore.y);
-    ctx.textAlign = 'left'; ctx.globalAlpha = 1;
-  }
-  // game over
-  if (gameOver) {
-    ctx.fillStyle = 'rgba(0,0,0,0.7)'; ctx.fillRect(0, 0, W, H);
-    ctx.fillStyle = '#ffb347'; ctx.font = '16px monospace'; ctx.textAlign = 'center';
-    ctx.fillText('TIME\'S UP!', W / 2, 80);
-    ctx.fillStyle = '#fff'; ctx.font = '10px monospace';
-    ctx.fillText('Final score: ' + score, W / 2, 104);
-    ctx.fillText('Tap the fire to play again', W / 2, 124);
+    ctx.fillText(message.slice(0, 34), W / 2, 73);
     ctx.textAlign = 'left';
   }
 }
 
-say('Roast your mallow over the fire!');
+showTitle();
 requestAnimationFrame(update);
 </script>
 </body>
