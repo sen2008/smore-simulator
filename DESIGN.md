@@ -1,6 +1,20 @@
 # Smore Simulator — Full Game Design Document
 
 **Version:** 1.5 (2026-09-25) — launch parks: CA, UT, Isle Royale; road to all 63
+**Version:** 1.6 (2026-09-26) — the Downwell rule: simple verbs, deep decisions
+
+### Design principle (locked)
+The game follows the *Downwell* rule: **3 verbs, all depth from decisions, not mechanics.**
+Verbs: drag the stick (position), tap to stack, tap to serve. Nothing else is ever mandatory.
+Depth lives in: build-defining drafts, streak combos, pick-1-of-2 night events, and the Park Passport.
+
+### New systems (prototype-live)
+- **Build-defining drafts** (the gun shop): Double-Prong Fork (roast 2 mallows, stacking swaps the loaded prong — zero new verbs), Jumbo Mallows (slow/heavy, big tips), Daredevil (+100% tips serving mid flare-up), Hot Streak (consecutive PERFECTs +25% each, resets on imperfect). Once-owned build cards leave the draft pool.
+- **Night events:** after each draft, pick 1 of 2 twists for the coming night — Food Critic (PERFECTs x2, imperfects earn 0), Storm Front (all-night rain, +50% patience), Bus Tour (faster spawns, +25% tips), Quiet Night (slower spawns, PERFECTs +50%).
+- **Park Passport (meta-progression):** cleared parks are stamped to localStorage; shown on title and win screens. Road to all 63.
+- **Streak meter** in HUD; second prong meter when fork is drafted.
+
+---
 **Status:** Pre-production
 **Repo:** github.com/sen2008/smore-simulator
 
