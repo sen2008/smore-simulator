@@ -132,10 +132,32 @@ const PARKS = {
 };
 
 const CHOCS = {
-  milk:   { name: "Milk",   plate: '#4a2410', dot: '#a06a35' },
-  dark:   { name: "Dark",   plate: '#241105', dot: '#6e3a15' },
-  reeses: { name: "Reese's", plate: '#c96a1e', dot: '#ff9d2e' },
+  milk:    { name: "Milk",    plate: '#4a2410', dot: '#a06a35' },
+  dark:    { name: "Dark",    plate: '#241105', dot: '#6e3a15' },
+  reeses:  { name: "Reese's", plate: '#c96a1e', dot: '#ff9d2e' },
+  white:   { name: "White",   plate: '#efe3c8', dot: '#fff7d6' },
+  caramel: { name: "Caramel", plate: '#a34d12', dot: '#ffb347' },
 };
+// meta-progression: new stock for your stand, earned by playing
+function unlockedList() { try { return JSON.parse(localStorage.getItem('smore_unlocks') || '[]'); } catch(e) { return []; } }
+function isUnlocked(key) { return unlockedList().includes(key); }
+function unlock(key) {
+  const u = unlockedList();
+  if (u.includes(key)) return false;
+  u.push(key); localStorage.setItem('smore_unlocks', JSON.stringify(u));
+  return true;
+}
+function chocPool() {
+  const p = ['milk', 'dark', 'reeses'];
+  if (isUnlocked('white')) p.push('white');
+  if (isUnlocked('caramel')) p.push('caramel');
+  return p;
+}
+function unlockLine() {
+  const w = isUnlocked('white') ? 'White choc ✓' : 'White choc: win a tour';
+  const c = isUnlocked('caramel') ? 'Caramel ✓' : 'Caramel: stamp ' + Math.max(0, 3 - passport().length) + ' more parks';
+  return 'Unlocks: ' + w + ' · ' + c;
+}
 const TARGETS = {
   soft:   { label: 'soft',   c: 0.23, w: 0.12 },
   golden: { label: 'GOLDEN', c: 0.52, w: 0.17 },
@@ -156,6 +178,8 @@ const CARDS = [
   { name: 'Extra Heart',     desc: '+1 reputation heart',    apply: (m, t) => { t.hearts = Math.min(5, t.hearts + 1); } },
   { name: "Reese's Cups",   desc: "Stock Reese's. +15% tips", once: true, apply: (m, t) => { t.choc = 'reeses'; m.tips *= 1.15; } },
   { name: 'Dark Chocolate', desc: 'Stock dark chocolate. +10% tips, +10% patience', once: true, apply: (m, t) => { t.choc = 'dark'; m.tips *= 1.10; m.pat *= 1.10; } },
+  { name: 'White Chocolate', desc: "Stock white chocolate. PERFECTs +40%", once: true, requires: 'white', apply: (m, t) => { t.choc = 'white'; } },
+  { name: 'Caramel Cups', desc: 'Stock caramel. Roast 10% slower, +30% tips', once: true, requires: 'caramel', apply: (m, t) => { t.choc = 'caramel'; m.rate *= 0.9; m.tips *= 1.3; } },
   { name: 'Windbreaker',     desc: 'Park effects halved',    apply: m => m.resist = 0.5 },
   { name: 'Tarp',            desc: 'Rain can\'t slow your roast', apply: m => m.tarp = true },
   { name: 'Lucky Lighter',   desc: 'First serve each night +25 coins', apply: m => m.firstBonus = 25 },
@@ -229,7 +253,7 @@ function startNight() {
   tour.streak = 0; tour.critic = false; tour.evRain = false;
   tour.evSpawn = 1; tour.evPat = 1; tour.evTips = 1; tour.evPerfect = 1;
   if (tour.event) { tour.event.apply(tour); tour.event = null; }
-  tour.trending = ['milk', 'dark', 'reeses'][Math.floor(Math.random() * 3)];
+  tour.trending = chocPool()[Math.floor(Math.random() * chocPool().length)];
   if (tour.evRain) tour.raining = true;
   layers = []; roast = 0; roastB = tour.mods.fork ? 0 : null;
   screen = 'night';
@@ -239,10 +263,13 @@ function startNight() {
 
 function endNight() {
   stampPark(tour.park);
+  if (!isUnlocked('caramel') && passport().length >= 3 && unlock('caramel')) {
+    say('NEW INGREDIENT UNLOCKED: Caramel Cups!');
+  }
   if (tour.night >= TUNING.nights) { winTour(); return; }
   screen = 'draft';
   // pick 3 distinct cards (once-cards you already own are out of the pool)
-  const pool = CARDS.filter(c => !(c.once && tour.mods.owned[c.name]));
+  const pool = CARDS.filter(c => !(c.once && tour.mods.owned[c.name]) && !(c.requires && !isUnlocked(c.requires)));
   const picks = [];
   for (let i = 0; i < 3 && pool.length; i++) picks.push(pool.splice(Math.floor(Math.random()*pool.length), 1)[0]);
   let html = '<h2>NIGHT ' + tour.night + ' COMPLETE</h2><p>' + PARKS[tour.park].name +
@@ -296,11 +323,13 @@ function gameOver() {
 
 function winTour() {
   screen = 'win';
+  const newUnlock = unlock('white');
   const b = best(), w = wins();
   if (tour.coins > b) localStorage.setItem('smore_best', String(tour.coins));
   localStorage.setItem('smore_wins', String(w + 1));
   showOverlay('<h2>LEGENDARY ROASTMASTER!</h2><p>You survived all ' + TUNING.nights + ' nights.</p>' +
-    '<p>Passport: ' + passportNames() + '</p>' +
+    (newUnlock ? '<p><b>NEW INGREDIENT UNLOCKED: White Chocolate!</b></p>' : '') +
+    '<p>Passport: ' + passportNames() + '</p>' + '<p>' + unlockLine() + '</p>' +
     '<p>Coins: <b>' + tour.coins + '</b> &nbsp; Best: ' + Math.max(b, tour.coins) + ' &nbsp; Tours won: ' + (w+1) + '</p>' +
     '<button class="bigbtn" id="again">NEW TOUR</button>');
   document.getElementById('again').addEventListener('click', startTour);
@@ -317,6 +346,7 @@ function showTitle() {
     '<p>Parks: Yosemite (calm) · Zion (wind) · Isle Royale (rain)</p>' +
     '<p>Best: ' + best() + ' &nbsp; Tours won: ' + wins() + '</p>' +
     '<p>Passport: ' + passportNames() + '</p>' +
+    '<p>' + unlockLine() + '</p>' +
     '<button class="bigbtn" id="start">START TOUR</button>');
   document.getElementById('start').addEventListener('click', startTour);
 }
@@ -327,7 +357,8 @@ function spawnCamper() {
   const key = r < 0.5 ? 'golden' : (r < 0.75 ? 'soft' : 'dark');
   const cols = ['#c94f4f', '#4f7dc9', '#4fc94f', '#c9a24f', '#9a4fc9'];
   const cr = Math.random();
-  const crave = cr < 0.5 ? null : (Math.random() < 0.55 ? tour.trending : ['milk', 'dark', 'reeses'][Math.floor(Math.random() * 3)]);
+  const pool = chocPool();
+  const crave = cr < 0.5 ? null : (Math.random() < 0.55 ? tour.trending : pool[Math.floor(Math.random() * pool.length)]);
   tour.campers.push({
     key, crave,
     patience: TUNING.patience * tour.mods.pat * tour.evPat,
@@ -353,6 +384,7 @@ function serve() {
   else                    { pts = 15;  msg = 'They wanted ' + T.label + '...'; }
   if (tour.critic && !perfect) pts = 0;
   if (perfect) pts = Math.round(pts * (tour.critic ? 2 : 1) * tour.evPerfect);
+  if (perfect && tour.choc === 'white') pts = Math.round(pts * 1.4);
   if (festival) pts *= 2;
   if (camper.crave && camper.crave === tour.choc) { pts = Math.round(pts * 1.5); msg += ' CRAVED!'; }
   if (tour.mods.daredevil && tour.flare > 0) { pts *= 2; msg += ' DAREDEVIL!'; }
