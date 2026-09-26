@@ -82,7 +82,8 @@
 <div class="hint" id="hint">
   <b>Tour prototype:</b> survive 5 nights, keep your 3 hearts. Drag the stick over the fire,
   stack to match each camper's order bubble, then SERVE. Draft an upgrade after each night.<br>
-  The fire has <b>heat zones</b> (scorch / sweet / cool) &mdash; and <b>flare-ups</b> will torch a mallow you don't pull out.
+  The fire has <b>heat zones</b> (scorch / sweet / cool) &mdash; and <b>flare-ups</b> will torch a mallow you don't pull out.<br>
+  Drafts define your <b>build</b> (two-prong fork! jumbo mallows! daredevil!). Chain PERFECTs for a <b>streak</b>, pick each night's <b>twist</b>, stamp your <b>passport</b>.
 </div>
 <script>
 'use strict';
@@ -108,7 +109,8 @@ let screen = 'title'; // title | night | draft | over | win
 let tip = { x: 150, y: 60 };
 let mouse = { x: 150, y: 60, active: false };
 let keys = {};
-let roast = 0;
+let roast = 0;      // loaded mallow: the one you'll stack
+let roastB = null;  // benched mallow: only with Double-Prong Fork
 let layers = [];
 let particles = [];
 let stars = [];
@@ -135,25 +137,39 @@ const TARGETS = {
 };
 
 const CARDS = [
+  // build-definers: change HOW you play, not just numbers
+  { name: 'Double-Prong Fork', desc: 'Roast 2 mallows at once. Stacking swaps the loaded one.', once: true, apply: m => m.fork = true },
+  { name: 'Jumbo Mallows', desc: 'Roast 40% slower, +50% tips', once: true, apply: m => { m.rate *= 0.6; m.tips *= 1.5; } },
+  { name: 'Daredevil', desc: '+100% tips when serving mid flare-up', once: true, apply: m => m.daredevil = true },
+  { name: 'Hot Streak', desc: 'Consecutive PERFECTs: +25% tips each. Resets on imperfect.', once: true, apply: m => m.streak = true },
+  // refinements
   { name: 'Insulated Glove', desc: 'Doneness windows +30%', apply: m => m.win += 0.30 },
   { name: 'Sugar Rush',      desc: 'Roast 25% faster',       apply: m => m.rate *= 1.25 },
   { name: 'Patient Crowd',   desc: 'Campers 30% more patient', apply: m => m.pat *= 1.30 },
-  { name: 'Big Tips',        desc: '+25% tips',              apply: m => m.tips *= 1.25 },
-  { name: 'Extra Heart',     desc: '+1 reputation heart',    apply: (m, t) => { t.hearts = Math.min(5, t.hearts + 1); } },
-  { name: 'Steady Hands',    desc: 'Roast 15% slower, windows +20%', apply: m => { m.rate *= 0.85; m.win += 0.20; } },
   { name: 'Campfire Songs',  desc: 'Campers arrive 20% slower', apply: m => m.spawn *= 1.20 },
-  { name: 'Double Chocolate',desc: '+15 coins per serve',    apply: m => m.flat += 15 },
-  { name: 'Night Owl',       desc: '+15s on every night',    apply: m => m.night += 15 },
+  { name: 'Extra Heart',     desc: '+1 reputation heart',    apply: (m, t) => { t.hearts = Math.min(5, t.hearts + 1); } },
   { name: 'Windbreaker',     desc: 'Park effects halved',    apply: m => m.resist = 0.5 },
   { name: 'Tarp',            desc: 'Rain can\'t slow your roast', apply: m => m.tarp = true },
   { name: 'Lucky Lighter',   desc: 'First serve each night +25 coins', apply: m => m.firstBonus = 25 },
 ];
 
+// pick 1 of 2 twists before each night: the strategic layer
+const EVENTS = [
+  { name: 'Food Critic', desc: 'PERFECTs pay double. Imperfect serves earn 0.', apply: t => { t.critic = true; } },
+  { name: 'Storm Front', desc: 'Rain all night (slow roast), campers +50% patience', apply: t => { t.evRain = true; t.evPat = 1.5; } },
+  { name: 'Bus Tour', desc: 'Campers arrive 40% faster, +25% tips', apply: t => { t.evSpawn = 0.6; t.evTips = 1.25; } },
+  { name: 'Quiet Night', desc: 'Campers arrive 40% slower, PERFECTs +50%', apply: t => { t.evSpawn = 1.4; t.evPerfect = 1.5; } },
+];
+
 function newMods() {
-  return { rate: 1, win: 0, pat: 1, tips: 1, spawn: 1, flat: 0, night: 0, resist: 1, tarp: false, firstBonus: 0 };
+  return { rate: 1, win: 0, pat: 1, tips: 1, spawn: 1, flat: 0, night: 0, resist: 1, tarp: false, firstBonus: 0,
+           fork: false, daredevil: false, streak: false, owned: {} };
 }
 function best() { return parseInt(localStorage.getItem('smore_best') || '0', 10); }
 function wins() { return parseInt(localStorage.getItem('smore_wins') || '0', 10); }
+function passport() { try { return JSON.parse(localStorage.getItem('smore_passport') || '[]'); } catch(e) { return []; } }
+function passportNames() { const p = passport(); return p.length ? p.map(k => PARKS[k] ? PARKS[k].name : k).join(', ') : 'empty'; }
+function stampPark(key) { const p = passport(); if (!p.includes(key)) { p.push(key); localStorage.setItem('smore_passport', JSON.stringify(p)); } }
 
 // ---------------- audio ----------------
 let actx = null;
@@ -179,7 +195,9 @@ function startTour() {
     parkPool: [], park: null, timeLeft: 0, campers: [],
     spawnT: 0, servedThisNight: 0, rainT: 8, raining: false, windT: 0,
     flareCD: 9, flareWarn: 0, flare: 0, zone: null,
+    streak: 0, event: null, critic: false, evRain: false, evSpawn: 1, evPat: 1, evTips: 1, evPerfect: 1,
   };
+  roastB = null;
   hideOverlay();
   startNight();
 }
@@ -199,19 +217,24 @@ function startNight() {
   tour.servedThisNight = 0;
   tour.rainT = 8; tour.raining = false;
   tour.flareCD = 7 + Math.random() * 5; tour.flareWarn = 0; tour.flare = 0; tour.zone = null;
-  layers = []; roast = 0;
+  tour.streak = 0; tour.critic = false; tour.evRain = false;
+  tour.evSpawn = 1; tour.evPat = 1; tour.evTips = 1; tour.evPerfect = 1;
+  if (tour.event) { tour.event.apply(tour); tour.event = null; }
+  if (tour.evRain) tour.raining = true;
+  layers = []; roast = 0; roastB = tour.mods.fork ? 0 : null;
   screen = 'night';
   hideOverlay();
   say(PARKS[tour.park].name + ' — Night ' + tour.night + ' of ' + TUNING.nights);
 }
 
 function endNight() {
+  stampPark(tour.park);
   if (tour.night >= TUNING.nights) { winTour(); return; }
   screen = 'draft';
-  // pick 3 distinct cards
-  const pool = CARDS.slice();
+  // pick 3 distinct cards (once-cards you already own are out of the pool)
+  const pool = CARDS.filter(c => !(c.once && tour.mods.owned[c.name]));
   const picks = [];
-  for (let i = 0; i < 3; i++) picks.push(pool.splice(Math.floor(Math.random()*pool.length), 1)[0]);
+  for (let i = 0; i < 3 && pool.length; i++) picks.push(pool.splice(Math.floor(Math.random()*pool.length), 1)[0]);
   let html = '<h2>NIGHT ' + tour.night + ' COMPLETE</h2><p>' + PARKS[tour.park].name +
     ' survived. Choose an upgrade:</p><div class="cards">';
   picks.forEach((c, i) => {
@@ -221,7 +244,29 @@ function endNight() {
   showOverlay(html);
   overlay.querySelectorAll('.card').forEach(el => {
     el.addEventListener('click', () => {
-      picks[parseInt(el.dataset.i, 10)].apply(tour.mods, tour);
+      const c = picks[parseInt(el.dataset.i, 10)];
+      c.apply(tour.mods, tour);
+      if (c.once) tour.mods.owned[c.name] = true;
+      pop();
+      showEventPick();
+    });
+  });
+}
+
+function showEventPick() {
+  screen = 'event';
+  const pool = EVENTS.slice();
+  const picks = [];
+  for (let i = 0; i < 2; i++) picks.push(pool.splice(Math.floor(Math.random()*pool.length), 1)[0]);
+  let html = '<h2>NIGHT ' + (tour.night + 1) + ' APPROACHES</h2><p>Choose tonight\'s twist:</p><div class="cards">';
+  picks.forEach((c, i) => {
+    html += '<button class="card" data-i="' + i + '"><b>' + c.name + '</b><span>' + c.desc + '</span></button>';
+  });
+  html += '</div>';
+  showOverlay(html);
+  overlay.querySelectorAll('.card').forEach(el => {
+    el.addEventListener('click', () => {
+      tour.event = picks[parseInt(el.dataset.i, 10)];
       pop();
       startNight();
     });
@@ -245,6 +290,7 @@ function winTour() {
   if (tour.coins > b) localStorage.setItem('smore_best', String(tour.coins));
   localStorage.setItem('smore_wins', String(w + 1));
   showOverlay('<h2>LEGENDARY ROASTMASTER!</h2><p>You survived all ' + TUNING.nights + ' nights.</p>' +
+    '<p>Passport: ' + passportNames() + '</p>' +
     '<p>Coins: <b>' + tour.coins + '</b> &nbsp; Best: ' + Math.max(b, tour.coins) + ' &nbsp; Tours won: ' + (w+1) + '</p>' +
     '<button class="bigbtn" id="again">NEW TOUR</button>');
   document.getElementById('again').addEventListener('click', startTour);
@@ -260,6 +306,7 @@ function showTitle() {
     '<p>A 5-night tour through the national parks.<br>Keep your 3 hearts. Draft upgrades. Become a <b>Legendary Roastmaster</b>.</p>' +
     '<p>Parks: Yosemite (calm) · Zion (wind) · Isle Royale (rain)</p>' +
     '<p>Best: ' + best() + ' &nbsp; Tours won: ' + wins() + '</p>' +
+    '<p>Passport: ' + passportNames() + '</p>' +
     '<button class="bigbtn" id="start">START TOUR</button>');
   document.getElementById('start').addEventListener('click', startTour);
 }
@@ -271,8 +318,8 @@ function spawnCamper() {
   const cols = ['#c94f4f', '#4f7dc9', '#4fc94f', '#c9a24f', '#9a4fc9'];
   tour.campers.push({
     key,
-    patience: TUNING.patience * tour.mods.pat,
-    maxPatience: TUNING.patience * tour.mods.pat,
+    patience: TUNING.patience * tour.mods.pat * tour.evPat,
+    maxPatience: TUNING.patience * tour.mods.pat * tour.evPat,
     color: cols[Math.floor(Math.random()*cols.length)],
     bob: Math.random() * 6.28,
   });
@@ -287,16 +334,27 @@ function serve() {
   const w = T.w * (1 + tour.mods.win);
   const d = Math.abs(roast - T.c);
   const festival = tour.night === TUNING.nights;
+  const perfect = d <= w;
   let pts, msg;
-  if (d <= w)       { pts = 100; msg = 'PERFECT ' + T.label + '!'; }
-  else if (d <= w*2){ pts = 50;  msg = 'Good enough.'; }
-  else              { pts = 15;  msg = 'They wanted ' + T.label + '...'; }
-  pts = Math.round(pts * tour.mods.tips * (festival ? 2 : 1)) + tour.mods.flat;
+  if (perfect)            { pts = 100; msg = 'PERFECT ' + T.label + '!'; }
+  else if (d <= w*2)      { pts = 50;  msg = 'Good enough.'; }
+  else                    { pts = 15;  msg = 'They wanted ' + T.label + '...'; }
+  if (tour.critic && !perfect) pts = 0;
+  if (perfect) pts = Math.round(pts * (tour.critic ? 2 : 1) * tour.evPerfect);
+  if (festival) pts *= 2;
+  if (tour.mods.daredevil && tour.flare > 0) { pts *= 2; msg += ' DAREDEVIL!'; }
+  if (tour.mods.streak) {
+    if (perfect) { tour.streak++; pts = Math.round(pts * (1 + 0.25 * tour.streak)); msg += ' x' + tour.streak; }
+    else tour.streak = 0;
+  }
+  pts = Math.round(pts * tour.mods.tips * tour.evTips) + tour.mods.flat;
   if (tour.servedThisNight === 0) pts += tour.mods.firstBonus;
   tour.coins += pts;
   tour.servedThisNight++;
   tour.campers.shift();
-  layers = []; roast = 0;
+  layers = [];
+  if (tour.mods.fork) { roast = roastB; roastB = 0; }  // stacking swaps the loaded prong
+  else roast = 0;
   pop();
   say(msg + ' +' + pts);
 }
@@ -384,8 +442,9 @@ function update(now) {
     tour.timeLeft -= dt;
     tour.windT += dt;
 
-    // rain (Isle Royale)
-    if (PARKS[tour.park].effect === 'rain') {
+    // rain (Isle Royale) — or all-night rain from Storm Front
+    if (tour.evRain) { tour.raining = true; }
+    else if (PARKS[tour.park].effect === 'rain') {
       tour.rainT -= dt;
       if (tour.rainT <= 0) {
         tour.raining = !tour.raining;
@@ -396,7 +455,7 @@ function update(now) {
 
     // spawn campers
     tour.spawnT -= dt;
-    const every = (tour.night === TUNING.nights ? TUNING.festivalSpawn : TUNING.spawnEvery) * tour.mods.spawn;
+    const every = (tour.night === TUNING.nights ? TUNING.festivalSpawn : TUNING.spawnEvery) * tour.mods.spawn * tour.evSpawn;
     if (tour.spawnT <= 0 && tour.campers.length < TUNING.maxWaiting) {
       spawnCamper();
       tour.spawnT = every;
@@ -442,6 +501,7 @@ function update(now) {
       let rate = TUNING.heatRate * tour.mods.rate * z.mult;
       if (tour.raining) rate *= tour.mods.tarp ? 1 : (0.35 + 0.3 * (1 - tour.mods.resist));
       roast = Math.min(1, roast + dt * rate);
+      if (tour.mods.fork && roastB !== null) roastB = Math.min(1, roastB + dt * rate);
       if (Math.random() < 0.25) sizzle();
       if (Math.random() < 0.5) particles.push({ x: tip.x + (Math.random()*8-4), y: tip.y, vy: -20 - Math.random()*20, life: 0.5, c: '#ff9d2e' });
     }
@@ -589,6 +649,11 @@ function drawStick(now) {
   ctx.beginPath(); ctx.moveTo(W - 8, H + 4); ctx.lineTo(tip.x + wob, tip.y); ctx.stroke();
   px(tip.x + wob - 6, tip.y - 9, 12, 14, mallowColorAt(roast));
   px(tip.x + wob - 6, tip.y - 9, 12, 3, 'rgba(255,255,255,0.35)');
+  if (tour && tour.mods.fork && roastB !== null) {
+    ctx.beginPath(); ctx.moveTo(W - 8, H + 4); ctx.lineTo(tip.x + wob + 12, tip.y + 4); ctx.stroke();
+    px(tip.x + wob + 6, tip.y - 5, 12, 14, mallowColorAt(roastB));
+    px(tip.x + wob + 6, tip.y - 5, 12, 3, 'rgba(255,255,255,0.25)');
+  }
 }
 
 function drawHUD() {
@@ -613,6 +678,10 @@ function drawHUD() {
   ctx.fillText('TIME ' + Math.ceil(tour.timeLeft), 120, 26);
   ctx.fillStyle = '#ffd700'; ctx.font = '8px monospace';
   ctx.fillText('$' + tour.coins, 200, 15);
+  if (tour.mods.streak && tour.streak > 1) {
+    ctx.fillStyle = '#ff9d2e';
+    ctx.fillText('STREAK x' + tour.streak, 200, 26);
+  }
   // hearts
   for (let i = 0; i < 5; i++) {
     const on = i < tour.hearts;
@@ -620,11 +689,17 @@ function drawHUD() {
     px(202 + i * 10, 18, 4, 3, on ? '#ff4d5e' : '#331116');
   }
   ctx.fillStyle = '#aaa'; ctx.font = '6px monospace';
-  ctx.fillText(PARKS[tour.park].name.toUpperCase(), 8, 190);
+  ctx.fillText(PARKS[tour.park].name.toUpperCase() + (tour.critic || tour.evRain || tour.evSpawn !== 1 ? ' *' : ''), 8, 190);
+  if (tour.mods.fork && roastB !== null) {
+    px(8, 30, 100, 5, '#222');
+    px(8, 30, 100 * roastB, 5, mallowColorAt(roastB));
+    ctx.fillStyle = '#aaa'; ctx.font = '6px monospace';
+    ctx.fillText('PRONG 2', 112, 35);
+  }
 }
 
 function draw(now, fx) {
-  const parkKey = (screen === 'night' || screen === 'draft') && tour ? tour.park : 'yosemite';
+  const parkKey = (screen === 'night' || screen === 'draft' || screen === 'event') && tour ? tour.park : 'yosemite';
   drawBackground(parkKey);
   drawFire(fx, now);
 
@@ -633,7 +708,7 @@ function draw(now, fx) {
     drawPlate();
     drawStick(now);
     drawHUD();
-  } else if (tour && (screen === 'draft')) {
+  } else if (tour && (screen === 'draft' || screen === 'event')) {
     drawHUD();
   }
 
