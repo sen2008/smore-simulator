@@ -1,6 +1,6 @@
 # Smore Simulator — Full Game Design Document
 
-**Version:** 1.4 (2026-09-25) — park backdrops as the selling point
+**Version:** 1.5 (2026-09-25) — launch parks: CA, UT, Isle Royale; road to all 63
 **Status:** Pre-production
 **Repo:** github.com/sen2008/smore-simulator
 
@@ -100,7 +100,7 @@ Raw → Soft → **Golden** → Dark → Burnt. Each order specifies a target (e
 **Between tours (meta progression):**
 - **Campfire Tales (XP):** earned from tours (win or lose) and achievements. Spend to unlock: new biomes, mallow types, tool blueprints (added to the draft pool), night events, stand skins, starting perks.
 - **Recipe book:** persists across tours; 24 recipes to discover — the completionist thread.
-- **Ranger Station wall:** each park cleared earns its badge/poster on your lodge wall — the visible trophy collection. Players will screenshot this too.
+- **Park Passport:** modeled on the real NPS Passport program — each park cleared earns its cancellation stamp in your passport. 7 stamps at launch, 63 total as Park Packs release. The passport screen is the visible trophy collection; players will screenshot it.
 - **No grind wall:** a skilled player can win a tour with base unlocks; meta progression widens options and margins, never gates victory.
 
 ## 9. The Tour (roguelike run structure)
@@ -111,11 +111,26 @@ Pacing is brisk by design: ~90 seconds of serving per night, then a 20-second dr
 
 ### 9.1 Night generation
 Each night draws from the unlocked **biome pool** (no repeats until the pool is exhausted):
-1. **Yosemite** — granite cliffs, waterfall, golden-hour pines. Calm fire, simple orders. Weighted to appear early; the tutorial biome.
-2. **Acadia** — rocky Atlantic coast, animated surf, wind-bent pines. Wind gusts. Unlocks Jumbo mallows.
-3. **Grand Canyon** — banded mesas in desert sunset, heat shimmer. Intense heat, flare-ups. Unlocks Minis.
-4. **Yellowstone** — snowy pines, erupting geyser, bison silhouettes in the steam. Fire health/stoking mechanic. Night-only aesthetic. Unlocks Stuffed mallows.
-5. **Great Smoky Mountains (Firefly Festival)** — *always night 5.* Synchronous fireflies pulsing in waves, festival string lights, blue-hazed ridgelines. Rush crowds, all mechanics, critic visits.
+### Launch parks (7)
+
+**California**
+1. **Yosemite** — granite cliffs, waterfall, golden-hour pines. Calm fire, simple orders. Weighted to appear early; the tutorial park.
+2. **Joshua Tree** — twisted Joshua trees, desert night sky, Milky Way. Night-only; low light makes doneness harder to read — trust the meter, not your eyes. Unlocks Minis (quick night bites).
+3. **Sequoia** — towering sequoias, ground fog, damp air. Fire health mechanic: damp wood means working the bellows to keep the fire alive.
+
+**Utah (Mighty 5, starting with 3)**
+4. **Zion** — sheer canyon walls, cottonwoods, the river glinting below. Wind gusts funnel through the canyon — telegraphed, reposition or wait. Unlocks Jumbo mallows.
+5. **Bryce Canyon** — hoodoo amphitheater cycling sunrise hues. Rapid temperature swings: roast speed drifts up and down through the night — watch the flames, not the clock.
+6. **Arches** — Delicate Arch on the skyline, slickrock fins, heat shimmer. Intense desert heat: everything roasts faster, flare-ups common.
+
+**Michigan**
+7. **Isle Royale** — Lake Superior shoreline, loons on the water, moose silhouette at dusk. Sudden lake storms roll in: rain douses an unsheltered fire — keep the tarp handy (draftable gear). Unlocks Stuffed mallows.
+
+### Night 5: Festival Night
+No fixed finale park — night 5 draws from the pool like any night, but always rolls the **Festival** event: string lights go up, rush crowds, all mechanics in play, critic visits. Any park can host the festival.
+
+### The long road: all 63
+Launch ships 7 parks. Post-launch **Park Packs** (free updates, 3–4 parks each) work toward all 63 national parks — each with its own vista, mechanical twist, and passport stamp. *"63 parks, one fire at a time"* is the live-service spine: years of content, and every pack is a marketing beat.
 
 Each night also rolls **1–2 modifiers**, e.g.: *Windy* (stronger gusts), *Full moon* (double tips), *Short rations* (one fewer ingredient slot), *Health inspector* (burnt serves cost a heart), *Rain* (fire health drains).
 
@@ -155,10 +170,12 @@ The fantasy is "can you handle *tonight's* fire?" — not "did you memorize leve
 
 ### 12.1 The parks
 1. **Yosemite** — granite cliff faces, waterfall with animated foam, ponderosa pines, golden-hour light.
-2. **Acadia** — rocky shoreline, animated surf, wind-bent pines, a lighthouse blinking on the horizon.
-3. **Grand Canyon** — banded mesa layers in sunset hues, a condor circling, heat shimmer.
-4. **Yellowstone** — snowy pines, a geyser erupting on a timer, bison drifting through the steam.
-5. **Great Smoky Mountains** — synchronous fireflies pulsing in waves, string lights, blue-hazed ridgelines.
+2. **Joshua Tree** — twisted Joshua trees, cholla silhouettes, Milky Way wheeling overhead, distant coyote call.
+3. **Sequoia** — cathedral sequoia trunks, drifting ground fog, ferns, dappled light shafts.
+4. **Zion** — sheer sandstone walls, cottonwoods, the Virgin River glinting below.
+5. **Bryce Canyon** — hoodoo amphitheater cycling sunrise hues, bristlecone pines, a circling raven.
+6. **Arches** — Delicate Arch on the skyline, slickrock fins, desert varnish streaks, heat shimmer.
+7. **Isle Royale** — Lake Superior shoreline, loons on the water, moose silhouette at dusk, northern lights on rare clear nights.
 
 Each park gets 3–4 parallax layers, 1–2 ambient wildlife species, one signature animated element, and its own dusk/night lighting treatment. Compositions are referenced from public-domain National Park Service photography — real places, real compositions.
 
@@ -214,7 +231,7 @@ Screen shake on flare-ups, ember particles, squash-and-stretch mallows, gooey ch
 
 ## 16. Scope Control (MVP definition)
 
-**MVP (vertical slice, itch.io playtest):** full tour loop — 3-biome pool, 5-night tours, 12-card draft pool, night events, hearts/reputation, 8 recipes, meta-unlock skeleton. Prove "one more tour" in playtesting before building the rest.
+**MVP (vertical slice, itch.io playtest):** full tour loop — 3-park pool (Yosemite, Zion, Isle Royale), 5-night tours, 12-card draft pool, night events, hearts/reputation, 8 recipes, meta-unlock skeleton. Prove "one more tour" in playtesting before building the rest.
 **Not in MVP:** Daily Roast backend, Workshop, trading cards, voice acting, ports beyond PC.
 
 ## 17. Roadmap
@@ -227,7 +244,7 @@ Screen shake on flare-ups, ember particles, squash-and-stretch mallows, gooey ch
 | 3 — Polish & Steamworks | 6 weeks | Final art/audio pass, achievements, leaderboards, cloud saves, Deck verified |
 | 4 — Demo & launch prep | 4 weeks | Public demo (Steam Next Fest target), Steam page, trailer, press kit |
 | Launch | — | Same-day Steam + Google Play. $7.99 Steam (10% launch discount) / Android free-trial + $4.99 unlock (see §18) |
-| Post-launch | ongoing | Daily Roast support, bug fixes, evaluate Workshop + DLC campsite pack |
+| Post-launch | ongoing | Daily Roast support, bug fixes, evaluate Workshop. **Park Packs:** 3–4 new national parks per free update on the road to all 63 — each pack a marketing beat |
 
 Total: ~6 months solo/small-team to launch.
 
@@ -269,7 +286,7 @@ Total: ~6 months solo/small-team to launch.
 - **Review score:** ≥85% positive (cozy audiences review generously when the vibe lands).
 - **Roguelike health:** ≥40% tour completion rate eventually (too low = too brutal, too high = no tension); median 3+ tours per player in week one ("one more tour" working).
 - **Android:** ≥4.2★ Play Store rating; trial→purchase conversion ≥5%; Android revenue treated as bonus on top of Steam, not the plan's foundation.
-- **Year-1 revenue target:** $30k–80k at $7.99 (typical range for a well-executed small cozy title) — enough to fund the DLC biome pack or next game.
+- **Year-1 revenue target:** $30k–80k at $7.99 (typical range for a well-executed small cozy title) — enough to fund the Park Packs or next game.
 
 ---
 
