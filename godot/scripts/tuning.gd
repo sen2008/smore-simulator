@@ -39,8 +39,22 @@ const TARGETS := {
 
 const PARKS := {
 	"yosemite": {"name": "Yosemite", "effect": "calm"},
+	"joshua": {"name": "Joshua Tree", "effect": "darkmallow"},
+	"sequoia": {"name": "Sequoia", "effect": "damp"},
 	"zion": {"name": "Zion", "effect": "wind"},
+	"bryce": {"name": "Bryce Canyon", "effect": "swings"},
+	"arches": {"name": "Arches", "effect": "heat"},
 	"isle": {"name": "Isle Royale", "effect": "rain"},
+}
+## One-line mechanical twist per park, announced at night start.
+const PARK_TIPS := {
+	"yosemite": "calm night",
+	"joshua": "trust the meter",
+	"sequoia": "slow roast, chill campers",
+	"zion": "watch for gusts",
+	"bryce": "roast speed swings",
+	"arches": "hot & fast",
+	"isle": "storms coming",
 }
 
 # plate/dot are HTML hex strings (no '#'); converted with Color(html) at draw time.

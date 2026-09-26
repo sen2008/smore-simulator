@@ -370,10 +370,51 @@ func _draw_background(park_key: String) -> void:
 		_px(mx + 8, 204, 6, 16, Color("0a0f0a"))
 		_px(mx + 22, 204, 6, 16, Color("0a0f0a"))
 		_px(mx + 26, 156, 12, 4, Color("0a0f0a"))  # antlers
+		for wx in [300.0, 326.0, 456.0]:  # wolf pack on the far ridgeline
+			_px(wx, 128, 20, 10, Color("0a0f0a"))
+			_px(wx + 14, 120, 8, 10, Color("0a0f0a"))
+			_px(wx + 16, 112, 4, 8, Color("0a0f0a"))
+			_px(wx + 4, 138, 4, 8, Color("0a0f0a"))
+			_px(wx + 12, 138, 4, 8, Color("0a0f0a"))
+	elif park_key == "joshua":
+		for x in range(0, 512, 10):  # milky way band
+			_px(x, 68 + sin(x / 56.0) * 18, 4, 4, Color(0.78, 0.8, 1.0, 0.28))
+		for jx in [72.0, 416.0]:  # joshua trees
+			_px(jx, 208, 12, 76, Color("3a2c1c"))
+			_px(jx - 16, 192, 44, 10, Color("3a2c1c"))
+			for sx in [jx - 18, jx - 4, jx + 12, jx + 24]:
+				_px(sx, 176, 10, 16, Color("2e4a2e"))
+				_px(sx + 2, 168, 6, 8, Color("3e5e3e"))
+	elif park_key == "sequoia":
+		for sx in [28.0, 192.0, 392.0]:  # towering trunks
+			_px(sx, 0, 60, 284, Color("4a2418"))
+			_px(sx + 10, 0, 14, 284, Color("5f3524"))
+			_px(sx + 40, 0, 8, 284, Color("332015"))
+		for x in range(0, 512, 32):  # ferns
+			_px(x, 264, 20, 20, Color("1e3a24"))
+		_px(0, 236, Tuning.LOGICAL_W, 48, Color(0.7, 0.78, 0.86, 0.07))  # ground fog
+	elif park_key == "bryce":
+		var bands := [Color("c96a3a"), Color("e09a5a"), Color("b85a30"), Color("d88a4a")]
+		for h in [[20.0, 36.0, 192.0], [88.0, 28.0, 140.0], [300.0, 40.0, 208.0], [364.0, 28.0, 156.0], [428.0, 36.0, 180.0]]:
+			var hx: float = h[0]; var hw: float = h[1]; var hh: float = h[2]
+			for y in range(0, int(hh), 16):
+				_px(hx + sin(y / 24.0) * 4, 284 - hh + y, hw, 16, bands[int(y / 16) % 4])
+			_px(hx + 4, 284 - hh - 12, hw - 8, 12, bands[1])  # caprock
+	elif park_key == "arches":
+		_px(0, 32, Tuning.LOGICAL_W, 52, Color("2e1430"))
+		_px(0, 84, Tuning.LOGICAL_W, 52, Color("5a2a24"))
+		_px(0, 136, Tuning.LOGICAL_W, 52, Color("8a4a2a"))
+		_px(120, 120, 28, 164, Color("a85e36"))
+		_px(300, 120, 28, 164, Color("a85e36"))
+		for x in range(120, 312, 12):  # delicate arch span
+			var ay := 120 - sin((x - 120) / 180.0 * PI) * 52
+			_px(x, ay, 12, 24, Color("c07a44"))
+		_px(0, 256, Tuning.LOGICAL_W, 28, Color("6e3a22"))  # slickrock
 	_px(436, 20, 28, 28, Color("e8e6c9"))  # moon
-	var gc := Color("3a2a1c") if park_key == "zion" else (Color("16302a") if park_key == "isle" else Color("1c3a1c"))
-	_px(0, 284, Tuning.LOGICAL_W, 100, gc)
-	_px(0, 284, Tuning.LOGICAL_W, 6, Color("5a422a") if park_key == "zion" else Color("2e5a2e"))
+	var gcol := {"yosemite": "1c3a1c", "joshua": "4a3a22", "sequoia": "16281c", "zion": "3a2a1c",
+		"bryce": "4a2a1c", "arches": "4a2418", "isle": "16302a"}
+	_px(0, 284, Tuning.LOGICAL_W, 100, Color(String(gcol.get(park_key, "1c3a1c"))))
+	_px(0, 284, Tuning.LOGICAL_W, 6, Color("6e5a34") if park_key == "joshua" else (Color("5a422a") if park_key == "zion" else Color("2e5a2e")))
 
 
 func _draw_fire(fx: float) -> void:

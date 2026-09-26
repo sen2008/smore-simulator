@@ -66,7 +66,11 @@ typos.
 3. Add audio (serve pop, flare warning, storm-out, win jingle).
 4. Art pass: replace rects with real pixel-art sprites/tilemaps; add the Isle
    Royale wolf pack + howl.
-5. Rebalance from playtests (the 60 s night length is still the open question
-   from the prototype).
+5. Rebalance from playtests (night length is now 90 s in both builds).
+6. Sync log 2026-09-26: all 7 launch parks ported (tuning.gd PARKS/PARK_TIPS,
+   game_state.gd mechanics: yosemite-night-1, zion gusts, arches heat,
+   sequoia damp, bryce swings, isle rain; main.gd vistas + wolves).
+   Still TODO in Godot: joshua-tree mallow darkening (visual), wolf howl
+   (audio), gust/flare audio cues.
 6. Export presets: re-save in the editor, install templates, produce the
    Android APK.

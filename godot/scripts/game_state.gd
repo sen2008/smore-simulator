@@ -41,6 +41,7 @@ func start_tour() -> void:
 		"park_pool": [], "park": "", "time_left": 0.0, "campers": [],
 		"spawn_t": 0.0, "served_this_night": 0, "rain_t": 8.0, "raining": false,
 		"wind_t": 0.0, "flare_cd": 9.0, "flare_warn": 0.0, "flare": 0.0, "zone": "",
+		"gust_cd": 9.0, "gust_warn": 0.0, "gust": 0.0,
 		"streak": 0, "event": {}, "critic": false, "ev_rain": false,
 		"ev_spawn": 1.0, "ev_pat": 1.0, "ev_tips": 1.0, "ev_perfect": 1.0,
 		"choc": "milk", "trending": "milk",
@@ -52,7 +53,8 @@ func start_tour() -> void:
 func _draw_park() -> String:
 	var pool: Array = tour["park_pool"]
 	if pool.is_empty():
-		pool = Tuning.PARKS.keys()
+		# yosemite is the fixed tutorial night; the pool holds the other six
+		pool = Tuning.PARKS.keys().filter(func(p): return p != "yosemite")
 		tour["park_pool"] = pool
 	var i := randi_range(0, pool.size() - 1)
 	var key := String(pool[i])
@@ -62,12 +64,15 @@ func _draw_park() -> String:
 
 # Flare-ups escalate: cozy early, spicy late.
 func flare_interval() -> float:
-	return (9.0 + randf() * 7.0) * (1.0 - 0.07 * (float(tour["night"]) - 1.0))
+	var base := (9.0 + randf() * 7.0) * (1.0 - 0.07 * (float(tour["night"]) - 1.0))
+	if String(Tuning.PARKS[String(tour["park"])]["effect"]) == "heat":
+		base *= 0.7 # arches: flare-ups common
+	return base
 
 
 func start_night() -> void:
 	tour["night"] = int(tour["night"]) + 1
-	tour["park"] = _draw_park()
+	tour["park"] = "yosemite" if int(tour["night"]) == 1 else _draw_park()
 	var mods: Dictionary = tour["mods"]
 	tour["time_left"] = Tuning.NIGHT_LENGTH + float(mods["night"])
 	tour["campers"] = []
@@ -79,6 +84,9 @@ func start_night() -> void:
 	tour["flare_warn"] = 0.0
 	tour["flare"] = 0.0
 	tour["zone"] = ""
+	tour["gust_cd"] = 10.0 + randf() * 6.0
+	tour["gust_warn"] = 0.0
+	tour["gust"] = 0.0
 	tour["streak"] = 0
 	tour["critic"] = false
 	tour["ev_rain"] = false
@@ -98,10 +106,11 @@ func start_night() -> void:
 	roast_b = 0.0
 	screen = "night"
 	emit_signal("message", String(Tuning.PARKS[String(tour["park"])]["name"])
-		+ " — Night " + str(tour["night"]) + " of " + str(Tuning.NIGHTS))
+		+ " N" + str(tour["night"]) + "/5 · " + String(Tuning.PARK_TIPS[String(tour["park"])]))
 
 
 func end_night() -> void:
+	# TODO: wolf-pack howl when park == "isle" and hearts are full (needs the audio pass)
 	save.stamp_park(String(tour["park"]))
 	if not save.is_unlocked("caramel") and save.passport.size() >= 3:
 		if save.unlock("caramel"):
@@ -244,7 +253,8 @@ func spawn_camper() -> void:
 	if cr >= 0.5:
 		crave = String(tour["trending"]) if randf() < 0.55 else String(pool[randi_range(0, pool.size() - 1)])
 	var mods: Dictionary = tour["mods"]
-	var p: float = Tuning.PATIENCE * float(mods["pat"]) * float(tour["ev_pat"])
+	var p: float = Tuning.PATIENCE * float(mods["pat"]) * float(tour["ev_pat"]) \
+		* (1.3 if String(Tuning.PARKS[String(tour["park"])]["effect"]) == "damp" else 1.0) # sequoia
 	var cols: Array = Tuning.CAMPER_COLORS
 	(tour["campers"] as Array).append({
 		"key": key,
@@ -362,7 +372,10 @@ func serve() -> Dictionary:
 func fire_x(now_msec: float) -> float:
 	if screen == "night" and not tour.is_empty() \
 			and String(Tuning.PARKS[String(tour["park"])]["effect"]) == "wind":
-		return Tuning.FIRE_X + sin(now_msec / 900.0) * 40.0 * float((tour["mods"] as Dictionary)["resist"])
+		var x := Tuning.FIRE_X + sin(now_msec / 900.0) * 40.0 * float((tour["mods"] as Dictionary)["resist"])
+		if float(tour["gust"]) > 0.0:
+			x += sin(now_msec / 300.0) * 60.0 * float((tour["mods"] as Dictionary)["resist"]) # gust shove
+		return x
 	return Tuning.FIRE_X
 
 
@@ -447,12 +460,35 @@ func update(dt: float, now_msec: float) -> void:
 			tour["flare_cd"] = flare_interval()
 			emit_signal("message", "The fire is surging...")
 
+	# Zion canyon gusts: telegraphed shove — reposition or wait.
+	if String(Tuning.PARKS[String(tour["park"])]["effect"]) == "wind":
+		if float(tour["gust"]) > 0.0:
+			tour["gust"] = float(tour["gust"]) - dt
+		elif float(tour["gust_warn"]) > 0.0:
+			tour["gust_warn"] = float(tour["gust_warn"]) - dt
+			if float(tour["gust_warn"]) <= 0.0:
+				tour["gust"] = 2.0
+				emit_signal("message", "GUST! Hold steady!")
+		else:
+			tour["gust_cd"] = float(tour["gust_cd"]) - dt
+			if float(tour["gust_cd"]) <= 0.0:
+				tour["gust_warn"] = 1.0
+				tour["gust_cd"] = 14.0 + randf() * 8.0
+				emit_signal("message", "Wind rising in the canyon...")
+
 	# Roast — heat zones make positioning the skill.
 	var z := zone_at(fire_x(now_msec))
 	if not z.is_empty():
 		var rate: float = Tuning.HEAT_RATE * float(mods["rate"]) * float(z["mult"])
 		if bool(tour["raining"]):
 			rate *= 1.0 if bool(mods["tarp"]) else (0.35 + 0.3 * (1.0 - float(mods["resist"])))
+		var peff := String(Tuning.PARKS[String(tour["park"])]["effect"])
+		if peff == "heat":
+			rate *= 1.25 # arches desert heat
+		elif peff == "damp":
+			rate *= 0.8 # sequoia damp shade
+		elif peff == "swings":
+			rate *= 1.0 + 0.35 * sin(now_msec / 5000.0) # bryce temperature swings
 		roast = minf(1.0, roast + dt * rate)
 		if bool(mods["fork"]):
 			roast_b = minf(1.0, roast_b + dt * rate)
