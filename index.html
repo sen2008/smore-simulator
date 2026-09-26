@@ -83,7 +83,8 @@
   <b>Tour prototype:</b> survive 5 nights, keep your 3 hearts. Drag the stick over the fire,
   stack to match each camper's order bubble, then SERVE. Draft an upgrade after each night.<br>
   The fire has <b>heat zones</b> (scorch / sweet / cool) &mdash; and <b>flare-ups</b> will torch a mallow you don't pull out.<br>
-  Drafts define your <b>build</b> (two-prong fork! jumbo mallows! daredevil!). Chain PERFECTs for a <b>streak</b>, pick each night's <b>twist</b>, stamp your <b>passport</b>.
+  Drafts define your <b>build</b> (two-prong fork! jumbo mallows! daredevil!). Chain PERFECTs for a <b>streak</b>, pick each night's <b>twist</b>, stamp your <b>passport</b>.<br>
+  Stock <b>Reese's</b> or <b>dark chocolate</b> and match campers' cravings (colored dot) for +50%.
 </div>
 <script>
 'use strict';
@@ -130,6 +131,11 @@ const PARKS = {
   isle:     { name: 'Isle Royale',  effect: 'rain' },
 };
 
+const CHOCS = {
+  milk:   { name: "Milk",   plate: '#4a2410', dot: '#a06a35' },
+  dark:   { name: "Dark",   plate: '#241105', dot: '#6e3a15' },
+  reeses: { name: "Reese's", plate: '#c96a1e', dot: '#ff9d2e' },
+};
 const TARGETS = {
   soft:   { label: 'soft',   c: 0.23, w: 0.12 },
   golden: { label: 'GOLDEN', c: 0.52, w: 0.17 },
@@ -148,6 +154,8 @@ const CARDS = [
   { name: 'Patient Crowd',   desc: 'Campers 30% more patient', apply: m => m.pat *= 1.30 },
   { name: 'Campfire Songs',  desc: 'Campers arrive 20% slower', apply: m => m.spawn *= 1.20 },
   { name: 'Extra Heart',     desc: '+1 reputation heart',    apply: (m, t) => { t.hearts = Math.min(5, t.hearts + 1); } },
+  { name: "Reese's Cups",   desc: "Stock Reese's. +15% tips", once: true, apply: (m, t) => { t.choc = 'reeses'; m.tips *= 1.15; } },
+  { name: 'Dark Chocolate', desc: 'Stock dark chocolate. +10% tips, +10% patience', once: true, apply: (m, t) => { t.choc = 'dark'; m.tips *= 1.10; m.pat *= 1.10; } },
   { name: 'Windbreaker',     desc: 'Park effects halved',    apply: m => m.resist = 0.5 },
   { name: 'Tarp',            desc: 'Rain can\'t slow your roast', apply: m => m.tarp = true },
   { name: 'Lucky Lighter',   desc: 'First serve each night +25 coins', apply: m => m.firstBonus = 25 },
@@ -196,6 +204,7 @@ function startTour() {
     spawnT: 0, servedThisNight: 0, rainT: 8, raining: false, windT: 0,
     flareCD: 9, flareWarn: 0, flare: 0, zone: null,
     streak: 0, event: null, critic: false, evRain: false, evSpawn: 1, evPat: 1, evTips: 1, evPerfect: 1,
+    choc: 'milk', trending: 'milk',
   };
   roastB = null;
   hideOverlay();
@@ -220,6 +229,7 @@ function startNight() {
   tour.streak = 0; tour.critic = false; tour.evRain = false;
   tour.evSpawn = 1; tour.evPat = 1; tour.evTips = 1; tour.evPerfect = 1;
   if (tour.event) { tour.event.apply(tour); tour.event = null; }
+  tour.trending = ['milk', 'dark', 'reeses'][Math.floor(Math.random() * 3)];
   if (tour.evRain) tour.raining = true;
   layers = []; roast = 0; roastB = tour.mods.fork ? 0 : null;
   screen = 'night';
@@ -316,8 +326,10 @@ function spawnCamper() {
   const r = Math.random();
   const key = r < 0.5 ? 'golden' : (r < 0.75 ? 'soft' : 'dark');
   const cols = ['#c94f4f', '#4f7dc9', '#4fc94f', '#c9a24f', '#9a4fc9'];
+  const cr = Math.random();
+  const crave = cr < 0.5 ? null : (Math.random() < 0.55 ? tour.trending : ['milk', 'dark', 'reeses'][Math.floor(Math.random() * 3)]);
   tour.campers.push({
-    key,
+    key, crave,
     patience: TUNING.patience * tour.mods.pat * tour.evPat,
     maxPatience: TUNING.patience * tour.mods.pat * tour.evPat,
     color: cols[Math.floor(Math.random()*cols.length)],
@@ -342,6 +354,7 @@ function serve() {
   if (tour.critic && !perfect) pts = 0;
   if (perfect) pts = Math.round(pts * (tour.critic ? 2 : 1) * tour.evPerfect);
   if (festival) pts *= 2;
+  if (camper.crave && camper.crave === tour.choc) { pts = Math.round(pts * 1.5); msg += ' CRAVED!'; }
   if (tour.mods.daredevil && tour.flare > 0) { pts *= 2; msg += ' DAREDEVIL!'; }
   if (tour.mods.streak) {
     if (perfect) { tour.streak++; pts = Math.round(pts * (1 + 0.25 * tour.streak)); msg += ' x' + tour.streak; }
@@ -619,6 +632,7 @@ function drawCampers() {
     // order bubble: target doneness swatch
     px(x - 2, y - 26, 16, 12, '#000');
     px(x - 1, y - 25, 14, 6, targetColor(c.key));
+    if (c.crave) px(x + 13, y - 26, 5, 5, CHOCS[c.crave].dot);
     ctx.fillStyle = '#fff'; ctx.font = '5px monospace';
     ctx.fillText(TARGETS[c.key].label[0].toUpperCase(), x + 3, y - 15);
     // patience bar
@@ -635,7 +649,11 @@ function drawPlate() {
   let ly = plateY;
   for (const l of layers) {
     if (l === 'graham')    { ly -= 5; px(plateX - 18, ly, 40, 5, '#d9a45b'); }
-    if (l === 'chocolate') { ly -= 4; px(plateX - 16, ly, 36, 4, '#4a2410'); }
+    if (l === 'chocolate') {
+      ly -= 4;
+      px(plateX - 16, ly, 36, 4, CHOCS[tour.choc].plate);
+      if (tour.choc === 'reeses') { px(plateX - 16, ly - 2, 36, 2, '#8a4a10'); px(plateX - 10, ly - 3, 24, 1, '#8a4a10'); }
+    }
     if (l === 'mallow')    { ly -= 7; px(plateX - 15, ly, 34, 7, mallowColorAt(roast)); }
   }
   const want = expectedNext();
@@ -690,6 +708,9 @@ function drawHUD() {
   }
   ctx.fillStyle = '#aaa'; ctx.font = '6px monospace';
   ctx.fillText(PARKS[tour.park].name.toUpperCase() + (tour.critic || tour.evRain || tour.evSpawn !== 1 ? ' *' : ''), 8, 190);
+  ctx.fillStyle = CHOCS[tour.trending].dot;
+  ctx.fillText('TREND: ' + CHOCS[tour.trending].name.toUpperCase(), 130, 190);
+  ctx.fillStyle = '#aaa';
   if (tour.mods.fork && roastB !== null) {
     px(8, 30, 100, 5, '#222');
     px(8, 30, 100 * roastB, 5, mallowColorAt(roastB));
