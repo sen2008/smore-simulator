@@ -1,6 +1,6 @@
 # Smore Simulator — Full Game Design Document
 
-**Version:** 1.2 (2026-09-25) — 10-minute tours
+**Version:** 1.3 (2026-09-25) — Android launch target
 **Status:** Pre-production
 **Repo:** github.com/sen2008/smore-simulator
 
@@ -168,6 +168,7 @@ The fantasy is "can you handle *tonight's* fire?" — not "did you memorize leve
 - Diegetic where possible: roast meter as a thermometer staked by the fire; orders as pinned tickets on a board.
 - One-screen kitchen: fire left, assembly right, customers top — no scrolling, no tabs mid-shift.
 - Full controller support + mouse; touch for Steam Deck (verified target).
+- **Mobile-first touch:** the entire game is one-finger playable — drag to move the stick, tap buttons and draft cards. No hover-dependent mechanics, no tiny targets (44px minimum). Landscape orientation; UI scales from phones to desktop.
 - Colorblind-safe palettes; dyslexia-friendly font option; remappable keys.
 
 ## 15. Tech Stack
@@ -177,6 +178,7 @@ The fantasy is "can you handle *tonight's* fire?" — not "did you memorize leve
 - **Source control:** GitHub (this repo) — `main` (stable), `dev` branch, feature branches.
 - **Web prototype** (`index.html`, already shipped) stays as the public demo/teaser and mechanics testbed.
 - **Steam Deck:** Verified target — 1280×800, controller-first UI checks each milestone.
+- **Android:** Godot exports to Android from the same codebase (export templates + Gradle build). Google Play Games Services plugin for achievement/leaderboard parity with Steamworks. Play Billing library if we ship the free-trial model (§18). Test on 3–4 real devices including a low-end one; pixel art keeps perf and battery cost trivial.
 
 ## 16. Scope Control (MVP definition)
 
@@ -192,7 +194,7 @@ The fantasy is "can you handle *tonight's* fire?" — not "did you memorize leve
 | 2 — Content | 8 weeks | All 5 campsites, 24 recipes, 4 mallow types, customers, shop |
 | 3 — Polish & Steamworks | 6 weeks | Final art/audio pass, achievements, leaderboards, cloud saves, Deck verified |
 | 4 — Demo & launch prep | 4 weeks | Public demo (Steam Next Fest target), Steam page, trailer, press kit |
-| Launch | — | $7.99 launch price (10% launch discount) |
+| Launch | — | Same-day Steam + Google Play. $7.99 Steam (10% launch discount) / Android free-trial + $4.99 unlock (see §18) |
 | Post-launch | ongoing | Daily Roast support, bug fixes, evaluate Workshop + DLC campsite pack |
 
 Total: ~6 months solo/small-team to launch.
@@ -200,6 +202,8 @@ Total: ~6 months solo/small-team to launch.
 ## 18. Budget (solo/small team)
 
 - Steam Direct fee: $100 (recoupable).
+- Google Play Console: $25 one-time fee.
+- **Android monetization (recommendation):** free download with Night 1 playable; a single in-app purchase ($4.99) unlocks the full tour. Cold premium is a brutal sell on mobile — a free trial turns every install into a demo. Fallback: straight $4.99 premium (simpler, no billing code, far fewer installs). Steam stays premium $7.99 with no IAP.
 - Asset/audio tools & licenses: ~$500–2,000 (or rev-share with a pixel artist/composer).
 - Optional: freelance pixel artist for character/campsite art if art isn't your strength — highest-ROI spend.
 - Marketing: $0–500 (festivals and organic short-form video do the heavy lifting).
@@ -212,6 +216,7 @@ Total: ~6 months solo/small-team to launch.
 4. **Demo:** Steam Next Fest; target 10%+ demo→wishlist conversion.
 5. **Launch:** cozy-game press, Reddit (r/cozygames, r/pixelart), streamers who play chill games.
 6. **Post-launch:** Daily Roast gives streamers a reason to return; update cadence monthly for 3 months.
+7. **Android:** same-day Google Play launch; pitch mobile cozy-game press and YouTubers; the free trial *is* the marketing — short sessions and one-finger play are exactly what mobile players want.
 
 ## 20. Risks & Mitigations
 
@@ -222,6 +227,7 @@ Total: ~6 months solo/small-team to launch.
 | Discoverability | Demo + Next Fest + short-form video; cozy games have strong communities |
 | "One-note" gameplay fatigue | Environmental twists per campsite (§5.4) + Daily Roast variety |
 | Burnout (solo dev) | 6-month cap; cut campsite 5 into DLC if needed rather than crunch |
+| Android fragmentation & Play review | Test on real low-end devices; submit to Play review 2 weeks early; keep billing/IAP code isolated behind a platform flag so Steam builds stay clean |
 
 ## 21. Success Metrics
 
@@ -229,6 +235,7 @@ Total: ~6 months solo/small-team to launch.
 - **Demo conversion:** ≥10% demo players wishlist.
 - **Review score:** ≥85% positive (cozy audiences review generously when the vibe lands).
 - **Roguelike health:** ≥40% tour completion rate eventually (too low = too brutal, too high = no tension); median 3+ tours per player in week one ("one more tour" working).
+- **Android:** ≥4.2★ Play Store rating; trial→purchase conversion ≥5%; Android revenue treated as bonus on top of Steam, not the plan's foundation.
 - **Year-1 revenue target:** $30k–80k at $7.99 (typical range for a well-executed small cozy title) — enough to fund the DLC biome pack or next game.
 
 ---
