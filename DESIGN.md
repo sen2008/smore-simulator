@@ -1,6 +1,6 @@
 # Smore Simulator — Full Game Design Document
 
-**Version:** 1.3 (2026-09-25) — Android launch target
+**Version:** 1.4 (2026-09-25) — park backdrops as the selling point
 **Status:** Pre-production
 **Repo:** github.com/sen2008/smore-simulator
 
@@ -100,6 +100,7 @@ Raw → Soft → **Golden** → Dark → Burnt. Each order specifies a target (e
 **Between tours (meta progression):**
 - **Campfire Tales (XP):** earned from tours (win or lose) and achievements. Spend to unlock: new biomes, mallow types, tool blueprints (added to the draft pool), night events, stand skins, starting perks.
 - **Recipe book:** persists across tours; 24 recipes to discover — the completionist thread.
+- **Ranger Station wall:** each park cleared earns its badge/poster on your lodge wall — the visible trophy collection. Players will screenshot this too.
 - **No grind wall:** a skilled player can win a tour with base unlocks; meta progression widens options and margins, never gates victory.
 
 ## 9. The Tour (roguelike run structure)
@@ -110,11 +111,11 @@ Pacing is brisk by design: ~90 seconds of serving per night, then a 20-second dr
 
 ### 9.1 Night generation
 Each night draws from the unlocked **biome pool** (no repeats until the pool is exhausted):
-1. **Pinewood Forest** — calm fire, simple orders. Weighted to appear early; the tutorial biome.
-2. **Lakeshore** — wind gusts. Unlocks Jumbo mallows.
-3. **Desert Mesa** — intense heat, flare-ups. Unlocks Minis.
-4. **Snowy Peaks** — fire health/stoking mechanic. Unlocks Stuffed mallows. Night-only aesthetic.
-5. **Festival Grounds** — *always night 5.* Rush crowds, all mechanics, critic visits.
+1. **Yosemite** — granite cliffs, waterfall, golden-hour pines. Calm fire, simple orders. Weighted to appear early; the tutorial biome.
+2. **Acadia** — rocky Atlantic coast, animated surf, wind-bent pines. Wind gusts. Unlocks Jumbo mallows.
+3. **Grand Canyon** — banded mesas in desert sunset, heat shimmer. Intense heat, flare-ups. Unlocks Minis.
+4. **Yellowstone** — snowy pines, erupting geyser, bison silhouettes in the steam. Fire health/stoking mechanic. Night-only aesthetic. Unlocks Stuffed mallows.
+5. **Great Smoky Mountains (Firefly Festival)** — *always night 5.* Synchronous fireflies pulsing in waves, festival string lights, blue-hazed ridgelines. Rush crowds, all mechanics, critic visits.
 
 Each night also rolls **1–2 modifiers**, e.g.: *Windy* (stronger gusts), *Full moon* (double tips), *Short rations* (one fewer ingredient slot), *Health inspector* (burnt serves cost a heart), *Rain* (fire health drains).
 
@@ -148,13 +149,44 @@ The fantasy is "can you handle *tonight's* fire?" — not "did you memorize leve
 - **Stats:** track for achievements and future balancing.
 - Post-launch consideration: trading cards, Steam Workshop (custom recipes/campsites).
 
-## 12. Art Direction
+## 12. Art Direction: hand-crafted cozy, never AI
 
-- 16-bit pixel art, warm palette (ambers, deep blues for night).
-- Dynamic fire lighting: the whole scene breathes with the flames.
-- Day/night cycle per shift; weather per campsite.
+**The backdrops are the selling point.** Each biome is a recognizable American national park, painted as a layered parallax pixel-art vista. Players should screenshot them unprompted. Steam capsule art, the trailer, and the screenshots lead with the parks — not the UI.
+
+### 12.1 The parks
+1. **Yosemite** — granite cliff faces, waterfall with animated foam, ponderosa pines, golden-hour light.
+2. **Acadia** — rocky shoreline, animated surf, wind-bent pines, a lighthouse blinking on the horizon.
+3. **Grand Canyon** — banded mesa layers in sunset hues, a condor circling, heat shimmer.
+4. **Yellowstone** — snowy pines, a geyser erupting on a timer, bison drifting through the steam.
+5. **Great Smoky Mountains** — synchronous fireflies pulsing in waves, string lights, blue-hazed ridgelines.
+
+Each park gets 3–4 parallax layers, 1–2 ambient wildlife species, one signature animated element, and its own dusk/night lighting treatment. Compositions are referenced from public-domain National Park Service photography — real places, real compositions.
+
+### 12.2 The anti-AI style guide (non-negotiable)
+AI-generated art has tells: muddy over-blended gradients, detail soup with no resting areas, inconsistent light, waxy symmetry. Our rules:
+- **Limited deliberate palettes:** 16–32 colors per scene, chosen by hand. Flat shapes with hand-placed dithering — never smooth gradients.
+- **One light source:** the campfire. Every highlight and shadow answers to it; flicker is hand-animated, never faked with blur.
+- **Readable silhouettes:** every tree, tent, and animal reads as a shape at thumbnail size. No noise-for-detail.
+- **Hand imperfection:** slightly wonky lines, asymmetric compositions, charming irregularity. If it looks too perfect, it's wrong.
+- **Hand animation only:** 4–8 frame loops for fire, water, geysers, animals. Coherent pixel animation is something AI cannot do — it's our signature.
+- **Tile discipline:** backgrounds built from hand-made tiles with deliberate variation, not stamped repetition.
+- **Reference reality:** compose from NPS photos and real park visits, never from prompts.
+
+### 12.3 Cozy amplifiers (the details that sell it)
+- Foreground framing: grass tufts, tent guy-lines, a lantern swaying in the wind.
+- Ambient life: fireflies, moths around the lantern, a fox that occasionally crosses the background, an owl call.
+- Micro-storytelling: a cooler covered in park stickers, a dog asleep by the fire, the marshmallow bag on the prep table.
+- Weather as mood: Yosemite mist, Acadia sea spray, canyon dust devils, Yellowstone snowfall.
+- The fire is a character: it flares when you serve a golden, sulks when a camper storms out.
 - Characters: readable silhouettes + one accessory (beanie, ranger hat) — orders shown as icon bubbles.
-- Juice: screen shake on flare-ups, ember particles, squash-and-stretch mallows, gooey cheese-pull-style chocolate stretch on serve.
+
+### 12.4 Juice & feel
+Screen shake on flare-ups, ember particles, squash-and-stretch mallows, gooey chocolate stretch on serve. Dynamic fire lighting: the whole scene breathes with the flames.
+
+### 12.5 Production
+- Contract one human pixel artist; paid art test (one park backdrop + fire animation) before committing.
+- Style guide with do/don't examples derived from §12.2.
+- Per-park milestone: sketch → palette → parallax layers → animation pass → lighting pass.
 
 ## 13. Audio
 
@@ -217,6 +249,7 @@ Total: ~6 months solo/small-team to launch.
 5. **Launch:** cozy-game press, Reddit (r/cozygames, r/pixelart), streamers who play chill games.
 6. **Post-launch:** Daily Roast gives streamers a reason to return; update cadence monthly for 3 months.
 7. **Android:** same-day Google Play launch; pitch mobile cozy-game press and YouTubers; the free trial *is* the marketing — short sessions and one-finger play are exactly what mobile players want.
+8. **Backdrops are the marketing:** capsule art, trailer, and screenshots lead with the parks, never UI. Release the five park vistas as wallpapers at launch. Cozy players buy on vibe — hand them the vibe.
 
 ## 20. Risks & Mitigations
 
