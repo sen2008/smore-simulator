@@ -22,6 +22,7 @@ var event_picks: Array = []
 @onready var btn_mallow: Button = $UI/TouchButtons/BtnMallow
 @onready var btn_serve: Button = $UI/TouchButtons/BtnServe
 @onready var btn_fresh: Button = $UI/TouchButtons/BtnFresh
+@onready var touch_buttons: HBoxContainer = $UI/TouchButtons
 
 @onready var title_overlay: CenterContainer = $UI/TitleOverlay
 @onready var title_info: Label = $UI/TitleOverlay/Panel/VBox/TitleInfo
@@ -276,6 +277,7 @@ func _process(delta: float) -> void:
 	for s in stars:
 		var sd: Dictionary = s
 		sd["tw"] = float(sd["tw"]) + delta
+	touch_buttons.visible = state.screen == "night" # game buttons only belong on the night screen
 	queue_redraw()
 
 

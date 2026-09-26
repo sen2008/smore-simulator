@@ -72,7 +72,7 @@
   <canvas id="game" width="256" height="192"></canvas>
   <div id="overlay"></div>
 </div>
-<div class="buttons">
+<div class="buttons" id="btnrow">
   <button id="b-graham" type="button">Graham</button>
   <button id="b-choc" type="button">Choc</button>
   <button id="b-mallow" type="button">Mallow</button>
@@ -91,6 +91,8 @@
 const cv = document.getElementById('game');
 const ctx = cv.getContext('2d');
 const overlay = document.getElementById('overlay');
+const btnRow = document.getElementById('btnrow');
+let lastBtnVis = null; // game buttons only belong on the night screen
 ctx.imageSmoothingEnabled = false;
 const W = 256, H = 192;
 
@@ -633,6 +635,8 @@ function update(now) {
   for (const p of particles) { p.y += p.vy * dt; p.life -= dt; }
   particles = particles.filter(p => p.life > 0);
   for (const s of stars) s.tw += dt;
+  const btnVis = screen === 'night' ? 'flex' : 'none';
+  if (btnVis !== lastBtnVis) { btnRow.style.display = btnVis; lastBtnVis = btnVis; }
   draw(now, fx);
   requestAnimationFrame(update);
 }
