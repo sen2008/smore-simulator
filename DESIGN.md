@@ -1,15 +1,7 @@
 # Smore Simulator — Full Game Design Document
 
-**Version:** 1.5 (2026-09-25) — launch parks: CA, UT, Isle Royale; road to all 63
+**Version:** 1.6 (2026-09-26) — all 7 launch parks implemented in the web prototype; Yosemite fixed as the tutorial night
 **Version:** 1.6 (2026-09-26) — the Downwell rule: simple verbs, deep decisions
-**Version:** 1.7 (2026-09-26) — ingredient unlocks (meta-progression)
-
-- **Unlock framework:** `smore_unlocks` in localStorage; locked draft cards carry `requires`; cravings/trending draw only from the unlocked pool.
-- **White Chocolate** — unlocked by winning a tour. Draft card stocks it; PERFECTs +40%. The skill-reward pick.
-- **Caramel Cups** — unlocked at 3 passport stamps. Draft card stocks it; roast 10% slower, +30% tips. The tradeoff pick.
-- Title screen shows unlock progress; win screen celebrates new unlocks.
-
----
 
 ### Design principle (locked)
 The game follows the *Downwell* rule: **3 verbs, all depth from decisions, not mechanics.**
@@ -136,17 +128,19 @@ Each night draws from the unlocked **biome pool** (no repeats until the pool is 
 ### Launch parks (7)
 
 **California**
-1. **Yosemite** — granite cliffs, waterfall, golden-hour pines. Calm fire, simple orders. Weighted to appear early; the tutorial park.
-2. **Joshua Tree** — twisted Joshua trees, desert night sky, Milky Way. Night-only; low light makes doneness harder to read — trust the meter, not your eyes. Unlocks Minis (quick night bites).
-3. **Sequoia** — towering sequoias, ground fog, damp air. Fire health mechanic: damp wood means working the bellows to keep the fire alive.
+1. **Yosemite** — granite cliffs, waterfall, golden-hour pines. Calm fire, simple orders. Always night 1: the tutorial park.
+2. **Joshua Tree** — twisted Joshua trees, desert night sky, Milky Way band. Dark desert night: the mallow is too dark to eyeball — trust the meter, not your eyes.
+3. **Sequoia** — towering trunks, ground fog, damp air. Roast 20% slower, but campers are 30% more patient. The breather park.
 
 **Utah (Mighty 5, starting with 3)**
-4. **Zion** — sheer canyon walls, cottonwoods, the river glinting below. Wind gusts funnel through the canyon — telegraphed, reposition or wait. Unlocks Jumbo mallows.
-5. **Bryce Canyon** — hoodoo amphitheater cycling sunrise hues. Rapid temperature swings: roast speed drifts up and down through the night — watch the flames, not the clock.
-6. **Arches** — Delicate Arch on the skyline, slickrock fins, heat shimmer. Intense desert heat: everything roasts faster, flare-ups common.
+4. **Zion** — sheer canyon walls, river glinting below. The fire sways in the canyon breeze, plus telegraphed gusts that shove it hard — reposition or wait.
+5. **Bryce Canyon** — banded hoodoo amphitheater. Rapid temperature swings: roast speed drifts ±35% on a slow cycle — watch the flames, not the clock.
+6. **Arches** — Delicate Arch on a sunset skyline, slickrock fins. Intense desert heat: everything roasts 25% faster and flare-ups come ~30% more often.
 
 **Michigan**
-7. **Isle Royale** — Lake Superior shoreline, loons on the water, moose wading the shallows at dusk, a wolf pack crossing the far ridgeline at night — a nod to the island's famous wolf-moose study. Sudden lake storms roll in: rain douses an unsheltered fire — keep the tarp handy (draftable gear). Unlocks Stuffed mallows. Finish a night with full hearts and you'll hear the pack howl in approval.
+7. **Isle Royale** — Lake Superior shoreline, moose silhouette at dusk, a wolf pack crossing the far ridgeline — a nod to the island's famous wolf-moose study. Sudden lake storms roll in: rain douses an unsheltered fire. Finish a night with full hearts and the pack howls in approval.
+
+*Design note (1.6): the doc's bellows/minis/jumbo-unlock ideas were cut to honor the Downwell rule — depth through builds, events, and park twists, never extra verbs. Each park is exactly one mechanical twist plus its vista.*
 
 ### Night 5: Festival Night
 No fixed finale park — night 5 draws from the pool like any night, but always rolls the **Festival** event: string lights go up, rush crowds, all mechanics in play, critic visits. Any park can host the festival.

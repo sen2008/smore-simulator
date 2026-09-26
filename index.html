@@ -127,8 +127,22 @@ const BASE_FIRE_X = 80;
 
 const PARKS = {
   yosemite: { name: 'Yosemite',     effect: 'calm' },
+  joshua:   { name: 'Joshua Tree',  effect: 'darkmallow' },
+  sequoia:  { name: 'Sequoia',      effect: 'damp' },
   zion:     { name: 'Zion',         effect: 'wind' },
+  bryce:    { name: 'Bryce Canyon', effect: 'swings' },
+  arches:   { name: 'Arches',       effect: 'heat' },
   isle:     { name: 'Isle Royale',  effect: 'rain' },
+};
+// one-line mechanical twist per park (DESIGN.md 12.1); announced at night start
+const PARK_TIPS = {
+  yosemite: 'calm night',
+  joshua: 'trust the meter',
+  sequoia: 'slow roast, chill campers',
+  zion: 'watch for gusts',
+  bryce: 'roast speed swings',
+  arches: 'hot & fast',
+  isle: 'storms coming',
 };
 
 const CHOCS = {
@@ -216,6 +230,23 @@ function beep(freq, dur, type) {
     o.start(); o.stop(actx.currentTime + dur);
   } catch(e) {}
 }
+
+// isle royale: wolf-pack howl of approval
+function howl() {
+  try {
+    if (!actx) actx = new (window.AudioContext || window.webkitAudioContext)();
+    const t = actx.currentTime;
+    const o = actx.createOscillator(), g = actx.createGain();
+    o.type = 'sine';
+    o.frequency.setValueAtTime(380, t);
+    o.frequency.linearRampToValueAtTime(720, t + 0.45);
+    o.frequency.linearRampToValueAtTime(520, t + 1.1);
+    g.gain.setValueAtTime(0.07, t);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 1.3);
+    o.connect(g); g.connect(actx.destination);
+    o.start(t); o.stop(t + 1.35);
+  } catch(e) {}
+}
 const sizzle = () => beep(120 + Math.random()*80, 0.05, 'sawtooth');
 const pop = () => { beep(440, 0.08); setTimeout(() => beep(660, 0.1), 80); };
 const sad = () => beep(140, 0.3, 'sawtooth');
@@ -236,22 +267,27 @@ function startTour() {
 }
 
 // flare-ups escalate: cozy early, spicy late
-function flareInterval() { return (9 + Math.random() * 7) * (1 - 0.07 * (tour.night - 1)); }
+function flareInterval() {
+  let base = (9 + Math.random() * 7) * (1 - 0.07 * (tour.night - 1));
+  if (PARKS[tour.park].effect === 'heat') base *= 0.7; // arches: flare-ups common
+  return base;
+}
 function drawPark() {
-  if (tour.parkPool.length === 0) tour.parkPool = Object.keys(PARKS);
+  if (tour.parkPool.length === 0) tour.parkPool = Object.keys(PARKS).filter(p => p !== 'yosemite');
   const i = Math.floor(Math.random() * tour.parkPool.length);
   return tour.parkPool.splice(i, 1)[0];
 }
 
 function startNight() {
   tour.night++;
-  tour.park = drawPark();
+  tour.park = tour.night === 1 ? 'yosemite' : drawPark();
   tour.timeLeft = TUNING.nightLength + tour.mods.night;
   tour.campers = [];
   tour.spawnT = 1.5;
   tour.servedThisNight = 0;
   tour.rainT = 8; tour.raining = false;
   tour.flareCD = 5 + Math.random() * 3; tour.flareWarn = 0; tour.flare = 0; tour.zone = null;
+  tour.gustCD = 10 + Math.random() * 6; tour.gustWarn = 0; tour.gust = 0;
   tour.streak = 0; tour.critic = false; tour.evRain = false;
   tour.evSpawn = 1; tour.evPat = 1; tour.evTips = 1; tour.evPerfect = 1;
   if (tour.event) { tour.event.apply(tour); tour.event = null; }
@@ -260,10 +296,11 @@ function startNight() {
   layers = []; roast = 0; roastB = tour.mods.fork ? 0 : null;
   screen = 'night';
   hideOverlay();
-  say(PARKS[tour.park].name + ' — Night ' + tour.night + ' of ' + TUNING.nights);
+  say(PARKS[tour.park].name + ' N' + tour.night + '/5 · ' + PARK_TIPS[tour.park]);
 }
 
 function endNight() {
+  if (tour.park === 'isle' && tour.hearts >= TUNING.hearts) howl(); // the pack approves
   stampPark(tour.park);
   if (!isUnlocked('caramel') && passport().length >= 3 && unlock('caramel')) {
     say('NEW INGREDIENT UNLOCKED: Caramel Cups!');
@@ -363,8 +400,8 @@ function spawnCamper() {
   const crave = cr < 0.5 ? null : (Math.random() < 0.55 ? tour.trending : pool[Math.floor(Math.random() * pool.length)]);
   tour.campers.push({
     key, crave,
-    patience: TUNING.patience * tour.mods.pat * tour.evPat,
-    maxPatience: TUNING.patience * tour.mods.pat * tour.evPat,
+    patience: TUNING.patience * tour.mods.pat * tour.evPat * (PARKS[tour.park].effect === 'damp' ? 1.3 : 1),
+    maxPatience: TUNING.patience * tour.mods.pat * tour.evPat * (PARKS[tour.park].effect === 'damp' ? 1.3 : 1),
     color: cols[Math.floor(Math.random()*cols.length)],
     bob: Math.random() * 6.28,
   });
@@ -460,7 +497,9 @@ function addLayer(kind) {
 // ---------------- update ----------------
 function fireX(now) {
   if (screen === 'night' && tour && PARKS[tour.park].effect === 'wind') {
-    return BASE_FIRE_X + Math.sin(now / 900) * 20 * tour.mods.resist;
+    let x = BASE_FIRE_X + Math.sin(now / 900) * 20 * tour.mods.resist;
+    if (tour.gust > 0) x += Math.sin(now / 300) * 30 * tour.mods.resist; // gust shove
+    return x;
   }
   return BASE_FIRE_X;
 }
@@ -542,11 +581,27 @@ function update(now) {
       if (tour.flareCD <= 0) { tour.flareWarn = 1.2; tour.flareCD = flareInterval(); beep(220, 0.15, 'square'); say('The fire is surging...'); }
     }
 
+    // zion canyon gusts: telegraphed shove — reposition or wait
+    if (PARKS[tour.park].effect === 'wind') {
+      if (tour.gust > 0) tour.gust -= dt;
+      else if (tour.gustWarn > 0) {
+        tour.gustWarn -= dt;
+        if (tour.gustWarn <= 0) { tour.gust = 2; say('GUST! Hold steady!'); beep(140, 0.3, 'sawtooth'); }
+      } else {
+        tour.gustCD -= dt;
+        if (tour.gustCD <= 0) { tour.gustWarn = 1; tour.gustCD = 14 + Math.random() * 8; say('Wind rising in the canyon...'); }
+      }
+    }
+
     // roast - heat zones make positioning the skill
     const z = zoneAt(fx);
     if (z) {
       let rate = TUNING.heatRate * tour.mods.rate * z.mult;
       if (tour.raining) rate *= tour.mods.tarp ? 1 : (0.35 + 0.3 * (1 - tour.mods.resist));
+      const peff = PARKS[tour.park].effect;
+      if (peff === 'heat') rate *= 1.25;                                     // arches desert heat
+      else if (peff === 'damp') rate *= 0.8;                                 // sequoia damp shade
+      else if (peff === 'swings') rate *= 1 + 0.35 * Math.sin(now / 5000);    // bryce temperature swings
       roast = Math.min(1, roast + dt * rate);
       if (tour.mods.fork && roastB !== null) roastB = Math.min(1, roastB + dt * rate);
       if (Math.random() < 0.25) sizzle();
@@ -622,13 +677,59 @@ function drawBackground(parkKey) {
     px(mx+12, 82, 6, 12, '#0a0f0a');     // neck/head
     px(mx+4, 102, 3, 8, '#0a0f0a'); px(mx+11, 102, 3, 8, '#0a0f0a'); // legs
     px(mx+13, 78, 6, 2, '#0a0f0a');      // antlers
+    // wolf pack on the far ridgeline — the famous wolf-moose study
+    for (const wx of [150, 163, 228]) {
+      px(wx, 64, 10, 5, '#0a0f0a');        // body
+      px(wx + 7, 60, 4, 5, '#0a0f0a');      // head
+      px(wx + 8, 56, 2, 4, '#0a0f0a');      // ears
+      px(wx + 2, 69, 2, 4, '#0a0f0a'); px(wx + 6, 69, 2, 4, '#0a0f0a'); // legs
+    }
+  } else if (parkKey === 'joshua') {
+    // desert night: milky way band + twisted joshua trees
+    for (let x = 0; x < W; x += 5) px(x, 34 + Math.sin(x / 28) * 9, 2, 2, 'rgba(200,205,255,0.28)');
+    for (const jx of [36, 208]) {
+      px(jx, 104, 6, 38, '#3a2c1c');                    // trunk
+      px(jx - 8, 96, 22, 5, '#3a2c1c');                 // branches
+      for (const sx of [jx - 9, jx - 2, jx + 6, jx + 12]) {
+        px(sx, 88, 5, 8, '#2e4a2e');                    // spiky crowns
+        px(sx + 1, 84, 3, 4, '#3e5e3e');
+      }
+    }
+  } else if (parkKey === 'sequoia') {
+    // towering trunks + ground fog
+    for (const sx of [14, 96, 196]) {
+      px(sx, 0, 30, 142, '#4a2418');
+      px(sx + 5, 0, 7, 142, '#5f3524');
+      px(sx + 20, 0, 4, 142, '#332015');
+    }
+    for (let x = 0; x < W; x += 16) px(x, 132, 10, 10, '#1e3a24'); // ferns
+    px(0, 118, W, 24, 'rgba(180,200,220,0.07)');                   // fog
+  } else if (parkKey === 'bryce') {
+    // hoodoo amphitheater: banded spires
+    const bands = ['#c96a3a', '#e09a5a', '#b85a30', '#d88a4a'];
+    for (const [hx, hw, hh] of [[10, 18, 96], [44, 14, 70], [150, 20, 104], [182, 14, 78], [214, 18, 90]]) {
+      for (let y = 0; y < hh; y += 8) {
+        const wo = Math.sin(y / 12) * 2;
+        px(hx + wo, 142 - hh + y, hw, 8, bands[(y / 8 | 0) % 4]);
+      }
+      px(hx + 2, 142 - hh - 6, hw - 4, 6, bands[1]); // caprock
+    }
+  } else if (parkKey === 'arches') {
+    // sunset bands + delicate arch
+    px(0, 16, W, 26, '#2e1430'); px(0, 42, W, 26, '#5a2a24'); px(0, 68, W, 26, '#8a4a2a');
+    px(60, 60, 14, 82, '#a85e36'); px(150, 60, 14, 82, '#a85e36');  // pillars
+    for (let x = 60; x <= 150; x += 6) {
+      const y = 60 - Math.sin((x - 60) / 90 * Math.PI) * 26;
+      px(x, y | 0, 6, 12, '#c07a44');                              // span
+    }
+    px(0, 128, W, 14, '#6e3a22'); // slickrock
   }
   // moon
   px(218, 10, 14, 14, '#e8e6c9');
   // ground
-  const gc = parkKey === 'zion' ? '#3a2a1c' : (parkKey === 'isle' ? '#16302a' : '#1c3a1c');
-  px(0, 142, W, H - 142, gc);
-  px(0, 142, W, 3, parkKey === 'zion' ? '#5a422a' : '#2e5a2e');
+  const GCOL = { yosemite: '#1c3a1c', joshua: '#4a3a22', sequoia: '#16281c', zion: '#3a2a1c', bryce: '#4a2a1c', arches: '#4a2418', isle: '#16302a' };
+  px(0, 142, W, H - 142, GCOL[parkKey] || '#1c3a1c');
+  px(0, 142, W, 3, parkKey === 'joshua' ? '#6e5a34' : (parkKey === 'zion' ? '#5a422a' : '#2e5a2e'));
 }
 
 function drawFire(fx, now) {
@@ -701,10 +802,12 @@ function drawStick(now) {
   ctx.beginPath(); ctx.moveTo(W - 8, H + 4); ctx.lineTo(tip.x + wob, tip.y); ctx.stroke();
   px(tip.x + wob - 6, tip.y - 9, 12, 14, mallowColorAt(roast));
   px(tip.x + wob - 6, tip.y - 9, 12, 3, 'rgba(255,255,255,0.35)');
+  if (tour && PARKS[tour.park].effect === 'darkmallow') px(tip.x + wob - 6, tip.y - 9, 12, 14, 'rgba(5,5,15,0.55)'); // joshua: trust the meter
   if (tour && tour.mods.fork && roastB !== null) {
     ctx.beginPath(); ctx.moveTo(W - 8, H + 4); ctx.lineTo(tip.x + wob + 12, tip.y + 4); ctx.stroke();
     px(tip.x + wob + 6, tip.y - 5, 12, 14, mallowColorAt(roastB));
     px(tip.x + wob + 6, tip.y - 5, 12, 3, 'rgba(255,255,255,0.25)');
+    if (tour && PARKS[tour.park].effect === 'darkmallow') px(tip.x + wob + 6, tip.y - 5, 12, 14, 'rgba(5,5,15,0.55)');
   }
 }
 
