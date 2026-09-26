@@ -2,6 +2,14 @@
 
 **Version:** 1.5 (2026-09-25) — launch parks: CA, UT, Isle Royale; road to all 63
 **Version:** 1.6 (2026-09-26) — the Downwell rule: simple verbs, deep decisions
+**Version:** 1.7 (2026-09-26) — ingredient unlocks (meta-progression)
+
+- **Unlock framework:** `smore_unlocks` in localStorage; locked draft cards carry `requires`; cravings/trending draw only from the unlocked pool.
+- **White Chocolate** — unlocked by winning a tour. Draft card stocks it; PERFECTs +40%. The skill-reward pick.
+- **Caramel Cups** — unlocked at 3 passport stamps. Draft card stocks it; roast 10% slower, +30% tips. The tradeoff pick.
+- Title screen shows unlock progress; win screen celebrates new unlocks.
+
+---
 
 ### Design principle (locked)
 The game follows the *Downwell* rule: **3 verbs, all depth from decisions, not mechanics.**
