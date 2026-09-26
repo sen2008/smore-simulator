@@ -1,0 +1,29 @@
+; Engine configuration file.
+; Smore Simulator — Godot 4.3+, GL Compatibility (Android-friendly).
+
+config_version=5
+
+[application]
+
+config/name="Smore Simulator"
+config/description="A cozy roguelike about roasting the perfect s'more on a 5-night national park tour."
+run/main_scene="res://scenes/main.tscn"
+config/features=PackedStringArray("4.3", "GL Compatibility")
+config/icon="res://icon.svg"
+
+[display]
+
+window/size/viewport_width=512
+window/size/viewport_height=384
+window/stretch/mode="canvas_items"
+window/stretch/aspect="keep"
+window/handheld/orientation="landscape"
+
+[input_devices]
+
+pointing/emulate_touch_from_mouse=true
+
+[rendering]
+
+renderer/rendering_method="gl_compatibility"
+renderer/rendering_method.mobile="gl_compatibility"

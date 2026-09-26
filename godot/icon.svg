@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <rect width="128" height="128" rx="24" fill="#0b1020"/>
+  <!-- campfire glow -->
+  <ellipse cx="64" cy="104" rx="44" ry="12" fill="#ff9d2e" opacity="0.25"/>
+  <!-- bottom graham -->
+  <rect x="24" y="90" width="80" height="14" rx="2" fill="#d9a45b"/>
+  <rect x="24" y="90" width="80" height="4" rx="2" fill="#e8bd76"/>
+  <!-- chocolate -->
+  <rect x="28" y="78" width="72" height="12" rx="2" fill="#4a2410"/>
+  <!-- golden mallow -->
+  <rect x="30" y="54" width="68" height="24" rx="7" fill="#f5c86e"/>
+  <rect x="30" y="54" width="68" height="8" rx="4" fill="#fff3d6"/>
+  <!-- top graham -->
+  <rect x="24" y="40" width="80" height="14" rx="2" fill="#d9a45b"/>
+  <rect x="24" y="40" width="80" height="4" rx="2" fill="#e8bd76"/>
+  <!-- tiny flame -->
+  <path d="M64 8 C 58 18, 54 22, 54 28 A 10 10 0 0 0 74 28 C 74 22, 70 18, 64 8 Z" fill="#ff9d2e"/>
+  <path d="M64 18 C 61 23, 59 25, 59 28 A 5 5 0 0 0 69 28 C 69 25, 67 23, 64 18 Z" fill="#ffe14d"/>
+</svg>
