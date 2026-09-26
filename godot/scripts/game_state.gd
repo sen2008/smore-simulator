@@ -292,6 +292,9 @@ func add_layer(kind: String) -> bool:
 func fresh() -> void:
 	if screen != "night":
 		return
+	if layers.has("mallow"):
+		emit_signal("message", "Mallow's already stacked!")
+		return
 	roast = 0.0
 	emit_signal("message", "Fresh mallow!")
 
@@ -489,7 +492,9 @@ func update(dt: float, now_msec: float) -> void:
 			rate *= 0.8 # sequoia damp shade
 		elif peff == "swings":
 			rate *= 1.0 + 0.35 * sin(now_msec / 5000.0) # bryce temperature swings
-		roast = minf(1.0, roast + dt * rate)
+		# the mallow only cooks while it's still on the fork: once stacked, doneness is locked
+		if not layers.has("mallow"):
+			roast = minf(1.0, roast + dt * rate)
 		if bool(mods["fork"]):
 			roast_b = minf(1.0, roast_b + dt * rate)
 	tour["zone"] = String(z.get("zone", ""))

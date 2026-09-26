@@ -89,6 +89,7 @@ Raw → Soft → **Golden** → Dark → Burnt. Each order specifies a target (e
 ## 6. Assembly & Recipes
 
 - Base formula: cracker → chocolate → mallow → cracker, but recipes expand: double-stacks, open-face, drizzle toppings.
+- **Roast-before-stack:** the mallow only cooks while it's on the fork. Once the mallow layer is stacked, its doneness locks in — no cooking the finished s'more.
 - **Recipe book:** 24 recipes across the campaign; discovered by serving or bought as "secret recipes." Filled book = completionist hook.
 - **Signature combos:** serving the same camper's favorite 3 days running unlocks a named signature s'more with bonus tips permanently.
 - Assembly is quick by design (click/drag ingredients) — the challenge is doing it *while* mallows roast.

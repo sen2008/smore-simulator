@@ -504,8 +504,9 @@ func _draw_stick() -> void:
 		wob = sin(time_msec / 40.0) * 4.0
 	var tip := state.tip
 	draw_line(Vector2(504, 388), tip + Vector2(wob, 0), Color("7a5a30"), 6.0)
-	_px(tip.x + wob - 12, tip.y - 18, 24, 28, _mallow_color(state.roast))
-	_px(tip.x + wob - 12, tip.y - 18, 24, 6, Color(1, 1, 1, 0.35))
+	if not state.layers.has("mallow"): # mallow rides the fork until you stack it
+		_px(tip.x + wob - 12, tip.y - 18, 24, 28, _mallow_color(state.roast))
+		_px(tip.x + wob - 12, tip.y - 18, 24, 6, Color(1, 1, 1, 0.35))
 	if bool((state.tour["mods"] as Dictionary)["fork"]):
 		var tip2 := tip + Vector2(24, 8)
 		draw_line(Vector2(504, 388), tip2 + Vector2(wob, 0), Color("7a5a30"), 6.0)

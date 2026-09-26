@@ -470,7 +470,10 @@ function handleKey(k) {
   if (screen === 'title' && (k === 'enter' || k === ' ')) { startTour(); return; }
   if ((screen === 'over' || screen === 'win') && k === 'r') { startTour(); return; }
   if (screen !== 'night') return;
-  if (k === 'n') { roast = 0; say('Fresh mallow!'); }
+  if (k === 'n') {
+    if (layers.includes('mallow')) say("Mallow's already stacked!");
+    else { roast = 0; say('Fresh mallow!'); }
+  }
   if (k === 'g') addLayer('graham');
   if (k === 'c') addLayer('chocolate');
   if (k === 'm') addLayer('mallow');
@@ -593,19 +596,22 @@ function update(now) {
       }
     }
 
-    // roast - heat zones make positioning the skill
+    // roast - heat zones make positioning the skill. the mallow only cooks while it's
+    // still on the fork: once stacked, its doneness is locked in (no roast-after-stack).
     const z = zoneAt(fx);
     if (z) {
+      const stacked = layers.includes('mallow');
       let rate = TUNING.heatRate * tour.mods.rate * z.mult;
       if (tour.raining) rate *= tour.mods.tarp ? 1 : (0.35 + 0.3 * (1 - tour.mods.resist));
       const peff = PARKS[tour.park].effect;
       if (peff === 'heat') rate *= 1.25;                                     // arches desert heat
       else if (peff === 'damp') rate *= 0.8;                                 // sequoia damp shade
       else if (peff === 'swings') rate *= 1 + 0.35 * Math.sin(now / 5000);    // bryce temperature swings
-      roast = Math.min(1, roast + dt * rate);
-      if (tour.mods.fork && roastB !== null) roastB = Math.min(1, roastB + dt * rate);
-      if (Math.random() < 0.25) sizzle();
-      if (Math.random() < 0.5) particles.push({ x: tip.x + (Math.random()*8-4), y: tip.y, vy: -20 - Math.random()*20, life: 0.5, c: '#ff9d2e' });
+      let cooking = false;
+      if (!stacked) { roast = Math.min(1, roast + dt * rate); cooking = true; }
+      if (tour.mods.fork && roastB !== null) { roastB = Math.min(1, roastB + dt * rate); cooking = true; }
+      if (cooking && Math.random() < 0.25) sizzle();
+      if (cooking && Math.random() < 0.5) particles.push({ x: tip.x + (Math.random()*8-4), y: tip.y, vy: -20 - Math.random()*20, life: 0.5, c: '#ff9d2e' });
     }
     tour.zone = z ? z.zone : null;
     if (tour.raining && Math.random() < 0.6) {
@@ -800,9 +806,11 @@ function drawStick(now) {
   const wob = (tour && tour.zone === 'SCORCH') ? Math.sin(now / 40) * 2 : 0;
   ctx.strokeStyle = '#7a5a30'; ctx.lineWidth = 3;
   ctx.beginPath(); ctx.moveTo(W - 8, H + 4); ctx.lineTo(tip.x + wob, tip.y); ctx.stroke();
-  px(tip.x + wob - 6, tip.y - 9, 12, 14, mallowColorAt(roast));
-  px(tip.x + wob - 6, tip.y - 9, 12, 3, 'rgba(255,255,255,0.35)');
-  if (tour && PARKS[tour.park].effect === 'darkmallow') px(tip.x + wob - 6, tip.y - 9, 12, 14, 'rgba(5,5,15,0.55)'); // joshua: trust the meter
+  if (!layers.includes('mallow')) { // mallow rides the fork until you stack it
+    px(tip.x + wob - 6, tip.y - 9, 12, 14, mallowColorAt(roast));
+    px(tip.x + wob - 6, tip.y - 9, 12, 3, 'rgba(255,255,255,0.35)');
+    if (tour && PARKS[tour.park].effect === 'darkmallow') px(tip.x + wob - 6, tip.y - 9, 12, 14, 'rgba(5,5,15,0.55)'); // joshua: trust the meter
+  }
   if (tour && tour.mods.fork && roastB !== null) {
     ctx.beginPath(); ctx.moveTo(W - 8, H + 4); ctx.lineTo(tip.x + wob + 12, tip.y + 4); ctx.stroke();
     px(tip.x + wob + 6, tip.y - 5, 12, 14, mallowColorAt(roastB));
