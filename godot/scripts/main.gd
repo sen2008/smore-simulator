@@ -324,8 +324,7 @@ func _draw() -> void:
 		_draw_plate()
 		_draw_stick()
 		_draw_hud()
-	elif not state.tour.is_empty() and (state.screen == "draft" or state.screen == "event"):
-		_draw_hud()
+	# draft/event overlays print their own hearts/coins; the canvas HUD only ghosted through them
 	if flash_t > 0.0:
 		draw_rect(Rect2(0, 0, Tuning.LOGICAL_W, Tuning.LOGICAL_H), Color(1, 0.16, 0.16, flash_t * 0.4))
 	if msg_t > 0.0 and msg_text != "":

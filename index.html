@@ -25,8 +25,9 @@
   #overlay {
     position: absolute; inset: 4px; display: none;
     background: rgba(5, 8, 18, 0.92);
-    flex-direction: column; align-items: center; justify-content: center;
+    flex-direction: column; align-items: center; justify-content: safe center;
     text-align: center; padding: 12px; box-sizing: border-box; gap: 8px;
+    overflow-y: auto;
   }
   #overlay.show { display: flex; }
   #overlay h2 { color: #ffb347; margin: 0; font-size: clamp(15px, 4.5vw, 22px); letter-spacing: 2px; }
@@ -878,9 +879,8 @@ function draw(now, fx) {
     drawPlate();
     drawStick(now);
     drawHUD();
-  } else if (tour && (screen === 'draft' || screen === 'event')) {
-    drawHUD();
   }
+  // draft/event overlays print their own hearts/coins; the canvas HUD only ghosted through them
 
   if (flashT > 0) { ctx.fillStyle = 'rgba(255,40,40,' + (flashT * 0.4).toFixed(2) + ')'; ctx.fillRect(0, 0, W, H); }
 
