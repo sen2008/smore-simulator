@@ -235,6 +235,8 @@ function startTour() {
   startNight();
 }
 
+// flare-ups escalate: cozy early, spicy late
+function flareInterval() { return (9 + Math.random() * 7) * (1 - 0.07 * (tour.night - 1)); }
 function drawPark() {
   if (tour.parkPool.length === 0) tour.parkPool = Object.keys(PARKS);
   const i = Math.floor(Math.random() * tour.parkPool.length);
@@ -249,7 +251,7 @@ function startNight() {
   tour.spawnT = 1.5;
   tour.servedThisNight = 0;
   tour.rainT = 8; tour.raining = false;
-  tour.flareCD = 7 + Math.random() * 5; tour.flareWarn = 0; tour.flare = 0; tour.zone = null;
+  tour.flareCD = 5 + Math.random() * 3; tour.flareWarn = 0; tour.flare = 0; tour.zone = null;
   tour.streak = 0; tour.critic = false; tour.evRain = false;
   tour.evSpawn = 1; tour.evPat = 1; tour.evTips = 1; tour.evPerfect = 1;
   if (tour.event) { tour.event.apply(tour); tour.event = null; }
@@ -537,7 +539,7 @@ function update(now) {
       if (tour.flareWarn <= 0) { tour.flare = 2.2; say('FLARE-UP! Pull out!'); beep(90, 0.5, 'sawtooth'); }
     } else {
       tour.flareCD -= dt;
-      if (tour.flareCD <= 0) { tour.flareWarn = 1.2; tour.flareCD = 9 + Math.random() * 7; beep(220, 0.15, 'square'); say('The fire is surging...'); }
+      if (tour.flareCD <= 0) { tour.flareWarn = 1.2; tour.flareCD = flareInterval(); beep(220, 0.15, 'square'); say('The fire is surging...'); }
     }
 
     // roast - heat zones make positioning the skill
