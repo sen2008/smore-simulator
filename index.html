@@ -81,7 +81,8 @@
 </div>
 <div class="hint" id="hint">
   <b>Tour prototype:</b> survive 5 nights, keep your 3 hearts. Drag the stick over the fire,
-  stack to match each camper's order bubble, then SERVE. Draft an upgrade after each night.
+  stack to match each camper's order bubble, then SERVE. Draft an upgrade after each night.<br>
+  The fire has <b>heat zones</b> (scorch / sweet / cool) &mdash; and <b>flare-ups</b> will torch a mallow you don't pull out.
 </div>
 <script>
 'use strict';
@@ -95,10 +96,10 @@ const W = 256, H = 192;
 const TUNING = {
   nights: 5,
   nightLength: 60,      // seconds of serving per night
-  spawnEvery: 8,        // seconds between campers
-  festivalSpawn: 5,
+  spawnEvery: 6.5,      // seconds between campers
+  festivalSpawn: 4,
   maxWaiting: 3,
-  patience: 40,         // seconds before a camper storms out
+  patience: 30,         // seconds before a camper storms out
   heatRate: 0.28,
 };
 
@@ -177,6 +178,7 @@ function startTour() {
     night: 0, hearts: 3, coins: 0, mods: newMods(),
     parkPool: [], park: null, timeLeft: 0, campers: [],
     spawnT: 0, servedThisNight: 0, rainT: 8, raining: false, windT: 0,
+    flareCD: 9, flareWarn: 0, flare: 0, zone: null,
   };
   hideOverlay();
   startNight();
@@ -196,6 +198,7 @@ function startNight() {
   tour.spawnT = 1.5;
   tour.servedThisNight = 0;
   tour.rainT = 8; tour.raining = false;
+  tour.flareCD = 7 + Math.random() * 5; tour.flareWarn = 0; tour.flare = 0; tour.zone = null;
   layers = []; roast = 0;
   screen = 'night';
   hideOverlay();
@@ -359,6 +362,17 @@ function fireX(now) {
 function overFire(fx) {
   return tip.x > fx - 22 && tip.x < fx + 22 && tip.y > fireY - 46 && tip.y < fireY + 4;
 }
+// heat zones: positioning is the skill. base of flame = scorch, middle = sweet, tips = cool
+function zoneAt(fx) {
+  if (!overFire(fx)) return null;
+  const rel = (fireY - tip.y) / 46; // 0 at base, 1 at flame tip
+  let zone, mult;
+  if (rel < 0.35)      { zone = 'SCORCH'; mult = 2.6; }
+  else if (rel < 0.70) { zone = 'SWEET';  mult = 1.0; }
+  else                 { zone = 'cool';   mult = 0.45; }
+  if (tour.flare > 0) mult *= 2;
+  return { zone, mult };
+}
 
 let last = performance.now();
 function update(now) {
@@ -412,14 +426,26 @@ function update(now) {
     tip.x = Math.max(4, Math.min(W - 4, tip.x));
     tip.y = Math.max(4, Math.min(H - 4, tip.y));
 
-    // roast
-    if (overFire(fx)) {
-      let rate = TUNING.heatRate * tour.mods.rate;
+    // flare-ups: the bite. telegraphed surge, then the whole fire doubles. pull out or burn.
+    if (tour.flare > 0) tour.flare -= dt;
+    else if (tour.flareWarn > 0) {
+      tour.flareWarn -= dt;
+      if (tour.flareWarn <= 0) { tour.flare = 2.2; say('FLARE-UP! Pull out!'); beep(90, 0.5, 'sawtooth'); }
+    } else {
+      tour.flareCD -= dt;
+      if (tour.flareCD <= 0) { tour.flareWarn = 1.2; tour.flareCD = 9 + Math.random() * 7; beep(220, 0.15, 'square'); say('The fire is surging...'); }
+    }
+
+    // roast - heat zones make positioning the skill
+    const z = zoneAt(fx);
+    if (z) {
+      let rate = TUNING.heatRate * tour.mods.rate * z.mult;
       if (tour.raining) rate *= tour.mods.tarp ? 1 : (0.35 + 0.3 * (1 - tour.mods.resist));
       roast = Math.min(1, roast + dt * rate);
       if (Math.random() < 0.25) sizzle();
       if (Math.random() < 0.5) particles.push({ x: tip.x + (Math.random()*8-4), y: tip.y, vy: -20 - Math.random()*20, life: 0.5, c: '#ff9d2e' });
     }
+    tour.zone = z ? z.zone : null;
     if (tour.raining && Math.random() < 0.6) {
       particles.push({ x: Math.random()*W, y: -4, vy: 120, life: 1.6, c: '#6fa8dc', rain: true });
     }
@@ -498,15 +524,17 @@ function drawBackground(parkKey) {
   px(0, 142, W, 3, parkKey === 'zion' ? '#5a422a' : '#2e5a2e');
 }
 
-function drawFire(fx) {
+function drawFire(fx, now) {
   const stoneX = [-26, -18, -10, -2, 6, 14, 22];
   stoneX.forEach((o, i) => px(fx + o, fireY - 2 + (i % 2), 9, 6, i % 2 ? '#6b6b6b' : '#8a8a8a'));
   px(fx - 16, fireY - 10, 34, 6, '#5a3a1a');
   px(fx - 14, fireY - 16, 30, 5, '#6e4a22');
   const t = performance.now() / 120;
+  const inGame = tour && screen === 'night';
+  const boost = !inGame ? 1 : (tour.flare > 0 ? 1.6 : (tour.flareWarn > 0 ? 1.3 : 1));
   const cols = ['#ff3d00', '#ff9d2e', '#ffe14d', '#fff7b0', '#ffe14d'];
   for (let i = 0; i < 5; i++) {
-    const h = 18 + Math.sin(t + i * 1.7) * 7 + Math.random() * 4;
+    const h = (18 + Math.sin(t + i * 1.7) * 7 + Math.random() * 4) * boost;
     const wdt = 22 - i * 3;
     px(fx - wdt / 2, fireY - 12 - h + i * 5, wdt, 6, cols[i]);
   }
@@ -555,11 +583,12 @@ function drawPlate() {
   ctx.fillText(want ? 'next: ' + want : 'SERVE!', plateX - 24, plateY + 16);
 }
 
-function drawStick() {
+function drawStick(now) {
+  const wob = (tour && tour.zone === 'SCORCH') ? Math.sin(now / 40) * 2 : 0;
   ctx.strokeStyle = '#7a5a30'; ctx.lineWidth = 3;
-  ctx.beginPath(); ctx.moveTo(W - 8, H + 4); ctx.lineTo(tip.x, tip.y); ctx.stroke();
-  px(tip.x - 6, tip.y - 9, 12, 14, mallowColorAt(roast));
-  px(tip.x - 6, tip.y - 9, 12, 3, 'rgba(255,255,255,0.35)');
+  ctx.beginPath(); ctx.moveTo(W - 8, H + 4); ctx.lineTo(tip.x + wob, tip.y); ctx.stroke();
+  px(tip.x + wob - 6, tip.y - 9, 12, 14, mallowColorAt(roast));
+  px(tip.x + wob - 6, tip.y - 9, 12, 3, 'rgba(255,255,255,0.35)');
 }
 
 function drawHUD() {
@@ -572,6 +601,12 @@ function drawHUD() {
   ctx.strokeStyle = '#fff'; ctx.lineWidth = 1; ctx.strokeRect(8.5, 8.5, 100, 10);
   ctx.fillStyle = '#fff'; ctx.font = '7px monospace';
   ctx.fillText('ROAST', 8, 26);
+  if (tour.zone) {
+    ctx.fillStyle = tour.zone === 'SCORCH' ? '#ff4d4d' : (tour.zone === 'SWEET' ? '#7dff8a' : '#9ad1ff');
+    ctx.font = '7px monospace';
+    ctx.fillText(tour.zone + (tour.flare > 0 ? ' x2!' : ''), 46, 26);
+    ctx.fillStyle = '#fff';
+  }
 
   // night / hearts / coins / time
   ctx.fillText('NIGHT ' + tour.night + '/' + TUNING.nights, 120, 15);
@@ -591,12 +626,12 @@ function drawHUD() {
 function draw(now, fx) {
   const parkKey = (screen === 'night' || screen === 'draft') && tour ? tour.park : 'yosemite';
   drawBackground(parkKey);
-  drawFire(fx);
+  drawFire(fx, now);
 
   if (screen === 'night' && tour) {
     drawCampers();
     drawPlate();
-    drawStick();
+    drawStick(now);
     drawHUD();
   } else if (tour && (screen === 'draft')) {
     drawHUD();
