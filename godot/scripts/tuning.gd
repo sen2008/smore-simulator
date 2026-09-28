@@ -24,7 +24,7 @@ const TIP_SPEED := 280.0  # prototype 140 px/s at 256x192
 
 # --- Balance (mirrors prototype TUNING exactly) ---
 const NIGHTS := 5
-const NIGHT_LENGTH := 90.0
+const NIGHT_LENGTH := 40.0
 const SPAWN_EVERY := 6.5
 const FESTIVAL_SPAWN := 4.0
 const MAX_WAITING := 3

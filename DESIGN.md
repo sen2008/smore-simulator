@@ -51,7 +51,7 @@ Start tour → Night N: biome + modifiers drawn → Serve campers, manage fire
 Between tours: unlock new biomes, tools, events, and perks (meta progression).
 ```
 
-A tour is one run: ~10 minutes. A night is one shift (~90 seconds of serving + a quick draft). Full details in §9.
+A tour is one run: ~4 minutes. A night is one shift (~40 seconds of serving + a quick draft). Full details in §9.
 
 ## 5. The Roasting System (core mechanic, in depth)
 
@@ -120,9 +120,9 @@ Raw → Soft → **Golden** → Dark → Burnt. Each order specifies a target (e
 
 ## 9. The Tour (roguelike run structure)
 
-A tour = **5 nights**, ~10 minutes. Win by surviving night 5. Lose when reputation hits zero.
+A tour = **5 nights**, ~4 minutes. Win by surviving night 5. Lose when reputation hits zero.
 
-Pacing is brisk by design: ~90 seconds of serving per night, then a 20-second draft/merchant breather. Short runs mean low commitment, high "one more tour" energy — and 10-minute sessions play great on Steam Deck in handheld mode.
+Pacing is brisk by design: ~40 seconds of serving per night, then a 20-second draft/merchant breather. Short runs mean low commitment, high "one more tour" energy — and 4-minute sessions play great on Steam Deck in handheld mode.
 
 ### 9.1 Night generation
 Each night draws from the unlocked **biome pool** (no repeats until the pool is exhausted):
