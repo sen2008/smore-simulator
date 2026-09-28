@@ -775,12 +775,13 @@ function drawCampers() {
     px(x, y, 12, 16, c.color);
     px(x + 2, y - 8, 8, 8, '#e8b88a');
     px(x + 2, y - 10, 8, 3, '#333'); // hat
-    // order bubble: target doneness swatch
-    px(x - 2, y - 26, 16, 12, '#000');
-    px(x - 1, y - 25, 14, 6, targetColor(c.key));
-    if (c.crave) px(x + 13, y - 26, 5, 5, CHOCS[c.crave].dot);
-    ctx.fillStyle = '#fff'; ctx.font = '5px monospace';
-    ctx.fillText(TARGETS[c.key].label[0].toUpperCase(), x + 3, y - 15);
+    // order bubble: target doneness swatch + readable key letter
+    px(x - 4, y - 36, 20, 22, '#000');
+    px(x - 3, y - 35, 18, 8, targetColor(c.key));
+    if (c.crave) px(x + 11, y - 36, 5, 5, CHOCS[c.crave].dot);
+    ctx.fillStyle = '#fff'; ctx.font = '12px monospace'; ctx.textAlign = 'center';
+    ctx.fillText(TARGETS[c.key].label[0].toUpperCase(), x + 6, y - 15);
+    ctx.textAlign = 'left';
     // patience bar
     const pw = 20 * (c.patience / c.maxPatience);
     px(x - 4, y + 18, 20, 3, '#400');
@@ -803,8 +804,9 @@ function drawPlate() {
     if (l === 'mallow')    { ly -= 7; px(plateX - 15, ly, 34, 7, mallowColorAt(roast)); }
   }
   const want = expectedNext();
-  ctx.fillStyle = '#aaa'; ctx.font = '6px monospace';
-  ctx.fillText(want ? 'next: ' + want : 'SERVE!', plateX - 24, plateY + 16);
+  ctx.fillStyle = '#aaa'; ctx.font = '12px monospace'; ctx.textAlign = 'center';
+  ctx.fillText(want ? 'next: ' + want : 'SERVE!', plateX, plateY + 18);
+  ctx.textAlign = 'left';
 }
 
 function drawStick(now) {
@@ -832,40 +834,39 @@ function drawHUD() {
   px(8 + 100 * (gc - gw), 8, 100 * gw * 2, 10, 'rgba(255,215,80,0.5)');
   px(8, 8, 100 * roast, 10, mallowColorAt(roast));
   ctx.strokeStyle = '#fff'; ctx.lineWidth = 1; ctx.strokeRect(8.5, 8.5, 100, 10);
-  ctx.fillStyle = '#fff'; ctx.font = '7px monospace';
-  ctx.fillText('ROAST', 8, 26);
+  ctx.fillStyle = '#fff'; ctx.font = '14px monospace';
+  ctx.fillText('ROAST', 8, 30);
   if (tour.zone) {
     ctx.fillStyle = tour.zone === 'SCORCH' ? '#ff4d4d' : (tour.zone === 'SWEET' ? '#7dff8a' : '#9ad1ff');
-    ctx.font = '7px monospace';
-    ctx.fillText(tour.zone + (tour.flare > 0 ? ' x2!' : ''), 46, 26);
+    ctx.fillText(tour.zone + (tour.flare > 0 ? ' x2!' : ''), 8, 46);
     ctx.fillStyle = '#fff';
   }
 
   // night / hearts / coins / time
-  ctx.fillText('NIGHT ' + tour.night + '/' + TUNING.nights, 120, 15);
-  ctx.fillText('TIME ' + Math.ceil(tour.timeLeft), 120, 26);
-  ctx.fillStyle = '#ffd700'; ctx.font = '8px monospace';
-  ctx.fillText('$' + tour.coins, 200, 15);
+  ctx.fillText('NIGHT ' + tour.night + '/' + TUNING.nights, 120, 18);
+  ctx.fillText('TIME ' + Math.ceil(tour.timeLeft), 120, 34);
+  ctx.fillStyle = '#ffd700'; ctx.font = '16px monospace';
+  ctx.fillText('$' + tour.coins, 196, 18);
   if (tour.mods.streak && tour.streak > 1) {
-    ctx.fillStyle = '#ff9d2e';
-    ctx.fillText('STREAK x' + tour.streak, 200, 26);
+    ctx.fillStyle = '#ff9d2e'; ctx.font = '14px monospace';
+    ctx.fillText('STREAK x' + tour.streak, 168, 50);
   }
   // hearts
   for (let i = 0; i < 5; i++) {
     const on = i < tour.hearts;
-    px(200 + i * 10, 20, 8, 7, on ? '#ff4d5e' : '#331116');
-    px(202 + i * 10, 18, 4, 3, on ? '#ff4d5e' : '#331116');
+    px(200 + i * 10, 26, 8, 7, on ? '#ff4d5e' : '#331116');
+    px(202 + i * 10, 24, 4, 3, on ? '#ff4d5e' : '#331116');
   }
-  ctx.fillStyle = '#aaa'; ctx.font = '6px monospace';
+  ctx.fillStyle = '#aaa'; ctx.font = '12px monospace';
   ctx.fillText(PARKS[tour.park].name.toUpperCase() + (tour.critic || tour.evRain || tour.evSpawn !== 1 ? ' *' : ''), 8, 190);
   ctx.fillStyle = CHOCS[tour.trending].dot;
   ctx.fillText('TREND: ' + CHOCS[tour.trending].name.toUpperCase(), 130, 190);
   ctx.fillStyle = '#aaa';
   if (tour.mods.fork && roastB !== null) {
-    px(8, 30, 100, 5, '#222');
-    px(8, 30, 100 * roastB, 5, mallowColorAt(roastB));
-    ctx.fillStyle = '#aaa'; ctx.font = '6px monospace';
-    ctx.fillText('PRONG 2', 112, 35);
+    px(8, 52, 100, 5, '#222');
+    px(8, 52, 100 * roastB, 5, mallowColorAt(roastB));
+    ctx.fillStyle = '#aaa'; ctx.font = '12px monospace';
+    ctx.fillText('PRONG 2', 112, 58);
   }
 }
 
@@ -885,10 +886,10 @@ function draw(now, fx) {
   if (flashT > 0) { ctx.fillStyle = 'rgba(255,40,40,' + (flashT * 0.4).toFixed(2) + ')'; ctx.fillRect(0, 0, W, H); }
 
   if (messageT > 0 && message) {
-    ctx.fillStyle = '#000'; ctx.fillRect(18, 60, W - 36, 20);
-    ctx.strokeStyle = '#ffb347'; ctx.strokeRect(18.5, 60.5, W - 37, 19);
-    ctx.fillStyle = '#ffb347'; ctx.font = '8px monospace'; ctx.textAlign = 'center';
-    ctx.fillText(message.slice(0, 34), W / 2, 73);
+    ctx.fillStyle = '#000'; ctx.fillRect(10, 56, W - 20, 32);
+    ctx.strokeStyle = '#ffb347'; ctx.strokeRect(10.5, 56.5, W - 21, 31);
+    ctx.fillStyle = '#ffb347'; ctx.font = '16px monospace'; ctx.textAlign = 'center';
+    ctx.fillText(message.slice(0, 24), W / 2, 79);
     ctx.textAlign = 'left';
   }
 }
