@@ -23,4 +23,4 @@ Best score and tours won are saved in your browser.
 
 See [DESIGN.md](DESIGN.md) for the complete game design: the roguelike tour structure, all 63 national parks roadmap, Steam + Android launch plan, and art direction.
 
-Built with plain HTML/CSS/JS on a 256×192 canvas. Contributions welcome.
+Built with plain HTML/CSS/JS on a 256×192 canvas.
