@@ -15,7 +15,7 @@
   }
   body { padding: 10px 0 20px; box-sizing: border-box; }
   h1 { font-size: clamp(16px, 5vw, 22px); margin: 6px 0; letter-spacing: 4px; color: #ffb347; text-shadow: 2px 2px 0 #7a2c00; }
-  #wrap { position: relative; width: min(96vw, 640px); container-type: inline-size; }
+  #wrap { position: relative; flex: 1 1 auto; min-width: 0; max-width: 640px; container-type: inline-size; }
   canvas {
     image-rendering: pixelated; image-rendering: crisp-edges;
     width: 100%; height: auto; aspect-ratio: 4 / 3; display: block;
@@ -73,27 +73,32 @@
     touch-action: manipulation;
   }
   .bigbtn:active { transform: translateY(3px); box-shadow: 0 1px 0 #7a2c00; }
-  .buttons {
-    display: flex; flex-wrap: wrap; gap: 8px; justify-content: center;
-    margin-top: 10px; max-width: 96vw;
+  /* vertical button column on the right side of the game, over the page bg */
+  #stage { display: flex; gap: 8px; align-items: stretch; justify-content: center; width: min(96vw, 744px); }
+  #wrap { flex: 1 1 auto; min-width: 0; max-width: 640px; }
+  .btncol {
+    display: none; flex-direction: column; gap: 8px;
+    flex: 0 0 auto; width: clamp(64px, 24vw, 96px);
   }
-  .buttons button {
+  .btncol button {
+    flex: 1 1 0; min-height: 0;
     font-family: "Courier New", monospace; font-weight: bold; font-size: 15px;
     color: #1a0f00; background: #ffb347; border: 0;
-    padding: 12px 14px; min-width: 60px; border-radius: 4px;
+    padding: 8px 6px; border-radius: 4px;
     box-shadow: 0 4px 0 #7a2c00; touch-action: manipulation; cursor: pointer;
   }
-  .buttons button:active { transform: translateY(3px); box-shadow: 0 1px 0 #7a2c00; }
-  .buttons button.serve { background: #7dff8a; box-shadow: 0 4px 0 #1d6b25; }
-  .buttons button.serve:active { box-shadow: 0 1px 0 #1d6b25; }
-  .buttons button.fresh { background: #9ad1ff; box-shadow: 0 4px 0 #2c5a7a; }
-  .buttons button.fresh:active { box-shadow: 0 1px 0 #2c5a7a; }
+  .btncol button:active { transform: translateY(3px); box-shadow: 0 1px 0 #7a2c00; }
+  .btncol button.serve { flex-grow: 1.6; background: #7dff8a; box-shadow: 0 4px 0 #1d6b25; }
+  .btncol button.serve:active { box-shadow: 0 1px 0 #1d6b25; }
+  .btncol button.fresh { flex-grow: 0.8; background: #9ad1ff; box-shadow: 0 4px 0 #2c5a7a; }
+  .btncol button.fresh:active { box-shadow: 0 1px 0 #2c5a7a; }
   .hint { font-size: 12px; margin-top: 10px; color: #ccc; text-align: center; line-height: 1.6; max-width: 94vw; padding: 0 8px; }
   .hint b { color: #ffb347; }
 </style>
 </head>
 <body>
 <h1>SMORE SIMULATOR</h1>
+<div id="stage">
 <div id="wrap">
   <canvas id="game" width="256" height="192"></canvas>
   <div id="hud">
@@ -107,12 +112,13 @@
   </div>
   <div id="overlay"></div>
 </div>
-<div class="buttons" id="btnrow">
+<div class="btncol" id="btnrow">
   <button id="b-graham" type="button">Graham</button>
   <button id="b-choc" type="button">Choc</button>
   <button id="b-mallow" type="button">Mallow</button>
   <button id="b-serve" class="serve" type="button">SERVE</button>
   <button id="b-fresh" class="fresh" type="button">New</button>
+</div>
 </div>
 <div class="hint" id="hint">
   <b>Tour prototype:</b> survive 5 nights, keep your 3 hearts. Drag the stick over the fire,
