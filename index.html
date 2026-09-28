@@ -15,13 +15,38 @@
   }
   body { padding: 10px 0 20px; box-sizing: border-box; }
   h1 { font-size: clamp(16px, 5vw, 22px); margin: 6px 0; letter-spacing: 4px; color: #ffb347; text-shadow: 2px 2px 0 #7a2c00; }
-  #wrap { position: relative; width: min(96vw, 640px); }
+  #wrap { position: relative; width: min(96vw, 640px); container-type: inline-size; }
   canvas {
     image-rendering: pixelated; image-rendering: crisp-edges;
     width: 100%; height: auto; aspect-ratio: 4 / 3; display: block;
     border: 4px solid #3a2b1a; background: #000; box-sizing: border-box;
     cursor: crosshair; touch-action: none;
   }
+  /* Crisp text layer: the pixel canvas only draws art; ALL text lives here
+     as real DOM text so it stays sharp at any display size. Positions are
+     in % of the 4:3 game area; sizes in cqw so they scale with the canvas. */
+  #hud {
+    position: absolute; inset: 4px; pointer-events: none; display: none;
+    font-family: 'Courier New', monospace; font-weight: bold; color: #fff;
+    text-shadow: 0.18cqw 0.18cqw 0 #000; line-height: 1;
+  }
+  #hud > div { position: absolute; white-space: nowrap; }
+  #h-roast  { left: 3.1%; top: 7.5%;  font-size: 14px; font-size: 5.5cqw; }
+  #h-zone   { left: 3.1%; top: 16.5%; font-size: 14px; font-size: 5.5cqw; }
+  #h-night  { left: 46.9%; top: 1.5%; font-size: 14px; font-size: 5.5cqw; }
+  #h-time   { left: 46.9%; top: 10%;  font-size: 14px; font-size: 5.5cqw; }
+  #h-coins  { left: 76.6%; top: 0.5%;  font-size: 16px; font-size: 6.3cqw; color: #ffd700; }
+  #h-streak { left: 65.6%; top: 18.5%; font-size: 14px; font-size: 5.5cqw; color: #ff9d2e; }
+  #h-park   { left: 3.1%; bottom: 1.5%; font-size: 12px; font-size: 4.7cqw; color: #aaa; }
+  #h-trend  { left: 50.8%; bottom: 1.5%; font-size: 12px; font-size: 4.7cqw; }
+  #h-plate  { left: 50%; top: 81%; transform: translateX(-50%); font-size: 12px; font-size: 4.7cqw; color: #aaa; }
+  #h-prong  { left: 43.75%; top: 23.5%; font-size: 12px; font-size: 4.7cqw; color: #aaa; }
+  #h-msg {
+    left: 50%; top: 29%; transform: translateX(-50%); display: none;
+    font-size: 16px; font-size: 6.3cqw; color: #ffb347;
+    background: #000; border: 0.6cqw solid #ffb347; padding: 1cqw 3cqw;
+  }
+  .h-cam { font-size: 12px; font-size: 4.7cqw; transform: translateX(-50%); display: none; }
   #overlay {
     position: absolute; inset: 4px; display: none;
     background: rgba(5, 8, 18, 0.92);
@@ -71,6 +96,15 @@
 <h1>SMORE SIMULATOR</h1>
 <div id="wrap">
   <canvas id="game" width="256" height="192"></canvas>
+  <div id="hud">
+    <div id="h-roast"></div><div id="h-zone"></div>
+    <div id="h-night"></div><div id="h-time"></div>
+    <div id="h-coins"></div><div id="h-streak"></div>
+    <div id="h-park"></div><div id="h-trend"></div>
+    <div id="h-plate"></div><div id="h-prong"></div>
+    <div id="h-msg"></div>
+    <div class="h-cam" id="h-cam0"></div><div class="h-cam" id="h-cam1"></div><div class="h-cam" id="h-cam2"></div><div class="h-cam" id="h-cam3"></div><div class="h-cam" id="h-cam4"></div>
+  </div>
   <div id="overlay"></div>
 </div>
 <div class="buttons" id="btnrow">
@@ -93,6 +127,15 @@ const cv = document.getElementById('game');
 const ctx = cv.getContext('2d');
 const overlay = document.getElementById('overlay');
 const btnRow = document.getElementById('btnrow');
+// Crisp DOM text layer (see #hud CSS): the canvas draws pixel art only.
+const hudEl = document.getElementById('hud');
+const elRoast = document.getElementById('h-roast'), elZone = document.getElementById('h-zone');
+const elNight = document.getElementById('h-night'), elTime = document.getElementById('h-time');
+const elCoins = document.getElementById('h-coins'), elStreak = document.getElementById('h-streak');
+const elPark = document.getElementById('h-park'), elTrend = document.getElementById('h-trend');
+const elPlate = document.getElementById('h-plate'), elProng = document.getElementById('h-prong');
+const elMsg = document.getElementById('h-msg');
+const elCams = [0, 1, 2, 3, 4].map(i => document.getElementById('h-cam' + i));
 let lastBtnVis = null; // game buttons only belong on the night screen
 ctx.imageSmoothingEnabled = false;
 const W = 256, H = 192;
@@ -632,6 +675,12 @@ function update(now) {
   }
 
   if (messageT > 0) messageT -= dt;
+  // DOM toast + HUD visibility follow game state
+  if (messageT > 0 && message) {
+    elMsg.style.display = 'block';
+    if (elMsg.textContent !== message) elMsg.textContent = message;
+  } else elMsg.style.display = 'none';
+  hudEl.style.display = (screen === 'night' && tour) ? 'block' : 'none';
   if (flashT > 0) flashT -= dt;
   for (const p of particles) { p.y += p.vy * dt; p.life -= dt; }
   particles = particles.filter(p => p.life > 0);
@@ -775,18 +824,21 @@ function drawCampers() {
     px(x, y, 12, 16, c.color);
     px(x + 2, y - 8, 8, 8, '#e8b88a');
     px(x + 2, y - 10, 8, 3, '#333'); // hat
-    // order bubble: target doneness swatch + readable key letter
+    // order bubble: target doneness swatch; the key letter is DOM text (crisp)
     px(x - 4, y - 36, 20, 22, '#000');
     px(x - 3, y - 35, 18, 8, targetColor(c.key));
     if (c.crave) px(x + 11, y - 36, 5, 5, CHOCS[c.crave].dot);
-    ctx.fillStyle = '#fff'; ctx.font = '12px monospace'; ctx.textAlign = 'center';
-    ctx.fillText(TARGETS[c.key].label[0].toUpperCase(), x + 6, y - 15);
-    ctx.textAlign = 'left';
+    const lab = elCams[i];
+    lab.textContent = TARGETS[c.key].label[0].toUpperCase();
+    lab.style.display = 'block';
+    lab.style.left = ((x + 6) / W * 100).toFixed(2) + '%';
+    lab.style.top = ((y - 28) / H * 100).toFixed(2) + '%';
     // patience bar
     const pw = 20 * (c.patience / c.maxPatience);
     px(x - 4, y + 18, 20, 3, '#400');
     px(x - 4, y + 18, pw, 3, c.patience > c.maxPatience * 0.3 ? '#7dff8a' : '#ff4d4d');
   });
+  for (let j = tour.campers.length; j < 5; j++) elCams[j].style.display = 'none';
 }
 
 function drawPlate() {
@@ -804,9 +856,7 @@ function drawPlate() {
     if (l === 'mallow')    { ly -= 7; px(plateX - 15, ly, 34, 7, mallowColorAt(roast)); }
   }
   const want = expectedNext();
-  ctx.fillStyle = '#aaa'; ctx.font = '12px monospace'; ctx.textAlign = 'center';
-  ctx.fillText(want ? 'next: ' + want : 'SERVE!', plateX, plateY + 18);
-  ctx.textAlign = 'left';
+  elPlate.textContent = want ? 'next: ' + want : 'SERVE!';
 }
 
 function drawStick(now) {
@@ -834,40 +884,37 @@ function drawHUD() {
   px(8 + 100 * (gc - gw), 8, 100 * gw * 2, 10, 'rgba(255,215,80,0.5)');
   px(8, 8, 100 * roast, 10, mallowColorAt(roast));
   ctx.strokeStyle = '#fff'; ctx.lineWidth = 1; ctx.strokeRect(8.5, 8.5, 100, 10);
-  ctx.fillStyle = '#fff'; ctx.font = '14px monospace';
-  ctx.fillText('ROAST', 8, 30);
+  // text readouts live in the DOM layer (crisp at any size); canvas keeps art only
+  elRoast.textContent = 'ROAST';
   if (tour.zone) {
-    ctx.fillStyle = tour.zone === 'SCORCH' ? '#ff4d4d' : (tour.zone === 'SWEET' ? '#7dff8a' : '#9ad1ff');
-    ctx.fillText(tour.zone + (tour.flare > 0 ? ' x2!' : ''), 8, 46);
-    ctx.fillStyle = '#fff';
-  }
+    elZone.style.display = 'block';
+    elZone.textContent = tour.zone + (tour.flare > 0 ? ' x2!' : '');
+    elZone.style.color = tour.zone === 'SCORCH' ? '#ff4d4d' : (tour.zone === 'SWEET' ? '#7dff8a' : '#9ad1ff');
+  } else elZone.style.display = 'none';
 
   // night / hearts / coins / time
-  ctx.fillText('NIGHT ' + tour.night + '/' + TUNING.nights, 120, 18);
-  ctx.fillText('TIME ' + Math.ceil(tour.timeLeft), 120, 34);
-  ctx.fillStyle = '#ffd700'; ctx.font = '16px monospace';
-  ctx.fillText('$' + tour.coins, 196, 18);
+  elNight.textContent = 'NIGHT ' + tour.night + '/' + TUNING.nights;
+  elTime.textContent = 'TIME ' + Math.ceil(tour.timeLeft);
+  elCoins.textContent = '$' + tour.coins;
   if (tour.mods.streak && tour.streak > 1) {
-    ctx.fillStyle = '#ff9d2e'; ctx.font = '14px monospace';
-    ctx.fillText('STREAK x' + tour.streak, 168, 50);
-  }
-  // hearts
+    elStreak.style.display = 'block';
+    elStreak.textContent = 'STREAK x' + tour.streak;
+  } else elStreak.style.display = 'none';
+  // hearts (pixel art, stays on canvas)
   for (let i = 0; i < 5; i++) {
     const on = i < tour.hearts;
     px(200 + i * 10, 26, 8, 7, on ? '#ff4d5e' : '#331116');
     px(202 + i * 10, 24, 4, 3, on ? '#ff4d5e' : '#331116');
   }
-  ctx.fillStyle = '#aaa'; ctx.font = '12px monospace';
-  ctx.fillText(PARKS[tour.park].name.toUpperCase() + (tour.critic || tour.evRain || tour.evSpawn !== 1 ? ' *' : ''), 8, 190);
-  ctx.fillStyle = CHOCS[tour.trending].dot;
-  ctx.fillText('TREND: ' + CHOCS[tour.trending].name.toUpperCase(), 130, 190);
-  ctx.fillStyle = '#aaa';
+  elPark.textContent = PARKS[tour.park].name.toUpperCase() + (tour.critic || tour.evRain || tour.evSpawn !== 1 ? ' *' : '');
+  elTrend.textContent = 'TREND: ' + CHOCS[tour.trending].name.toUpperCase();
+  elTrend.style.color = CHOCS[tour.trending].dot;
   if (tour.mods.fork && roastB !== null) {
     px(8, 52, 100, 5, '#222');
     px(8, 52, 100 * roastB, 5, mallowColorAt(roastB));
-    ctx.fillStyle = '#aaa'; ctx.font = '12px monospace';
-    ctx.fillText('PRONG 2', 112, 58);
-  }
+    elProng.style.display = 'block';
+    elProng.textContent = 'PRONG 2';
+  } else elProng.style.display = 'none';
 }
 
 function draw(now, fx) {
@@ -884,14 +931,7 @@ function draw(now, fx) {
   // draft/event overlays print their own hearts/coins; the canvas HUD only ghosted through them
 
   if (flashT > 0) { ctx.fillStyle = 'rgba(255,40,40,' + (flashT * 0.4).toFixed(2) + ')'; ctx.fillRect(0, 0, W, H); }
-
-  if (messageT > 0 && message) {
-    ctx.fillStyle = '#000'; ctx.fillRect(10, 56, W - 20, 32);
-    ctx.strokeStyle = '#ffb347'; ctx.strokeRect(10.5, 56.5, W - 21, 31);
-    ctx.fillStyle = '#ffb347'; ctx.font = '16px monospace'; ctx.textAlign = 'center';
-    ctx.fillText(message.slice(0, 24), W / 2, 79);
-    ctx.textAlign = 'left';
-  }
+  // message toast is DOM now (see tick); nothing drawn here
 }
 
 showTitle();
